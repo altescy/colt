@@ -40,6 +40,18 @@ class Grault:
         self.x = x
 
 
+@colt.register("garply")
+class Garply:
+    def __init__(self, x: tp.Dict[str, Foo]) -> None:
+        self.x = x
+
+
+@colt.register("waldo")
+class Waldo:
+    def __init__(self, x: tp.Union[str, Foo]) -> None:
+        self.x = x
+
+
 class Testcolt:
     @staticmethod
     def test_colt_with_type():
@@ -162,3 +174,46 @@ class Testcolt:
         assert isinstance(obj.x, tuple)
         assert isinstance(obj.x[0], Foo)
         assert isinstance(obj.x[1], Qux)
+
+    @staticmethod
+    def test_colt_dict():
+        config = {
+            "@type": "garply",
+            "x": {
+                "a": {"x": "hello"},
+                "b": {"x": "world"},
+            }
+        }
+
+        obj = colt.build(config)
+
+        assert isinstance(obj, Garply)
+        assert isinstance(obj.x, dict)
+        assert isinstance(obj.x["a"], Foo)
+        assert isinstance(obj.x["b"], Foo)
+        assert obj.x["a"].x == "hello"
+        assert obj.x["b"].x == "world"
+
+    @staticmethod
+    def test_colt_union():
+        config = {
+            "@type": "waldo",
+            "x": "hello",
+        }
+
+        obj = colt.build(config)
+
+        assert isinstance(obj, Waldo)
+        assert isinstance(obj.x, str)
+        assert obj.x == "hello"
+
+        config = {
+            "@type": "waldo",
+            "x": {"x": "hello"},
+        }
+
+        obj = colt.build(config)
+
+        assert isinstance(obj, Waldo)
+        assert isinstance(obj.x, Foo)
+        assert obj.x.x == "hello"
