@@ -34,6 +34,12 @@ class Corge:
         self.x = x
 
 
+@colt.register("grault")
+class Grault:
+    def __init__(self, x: tp.Tuple[Foo, Qux]) -> None:
+        self.x = x
+
+
 class Testcolt:
     @staticmethod
     def test_colt_with_type():
@@ -139,3 +145,20 @@ class Testcolt:
         assert isinstance(obj, Corge)
         assert isinstance(obj.x, list)
         assert isinstance(obj.x[0], str)
+
+    @staticmethod
+    def test_colt_tuple():
+        config = {
+            "@type": "grault",
+            "x": [
+                {"x": "hello"},
+                {"x": [1, 2, 3]},
+            ]
+        }
+
+        obj = colt.build(config)
+
+        assert isinstance(obj, Grault)
+        assert isinstance(obj.x, tuple)
+        assert isinstance(obj.x[0], Foo)
+        assert isinstance(obj.x[1], Qux)
