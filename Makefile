@@ -1,11 +1,11 @@
 PWD=$(shell pwd)
 PYTHON=python
 PYLINTRC=.pylintrc
-MODULE=pob
+MODULE=colt
 DOCKER=docker
 DOCKERFILE=$(PWD)/docker/Dockerfile.dev
-DOCKER_IMAGE=pob-dev
-DOCKER_CONTAINER=pob-dev-container
+DOCKER_IMAGE=colt-dev
+DOCKER_CONTAINER=colt-dev-container
 
 
 lint:

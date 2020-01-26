@@ -3,8 +3,8 @@ import typing as tp
 
 import copy
 
-from pob.error import ConfigurationError
-from pob.type_store import TypeStore
+from colt.error import ConfigurationError
+from colt.type_store import TypeStore
 
 
 class ColtBuilder:

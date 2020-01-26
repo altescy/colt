@@ -1,5 +1,5 @@
-pob: Python Object Builder
+colt
 ===
 
-[![Actions Status](https://github.com/altescy/pob/workflows/build/badge.svg)](https://github.com/altescy/pob)
+[![Actions Status](https://github.com/altescy/colt/workflows/build/badge.svg)](https://github.com/altescy/colt)
 

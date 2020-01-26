@@ -2,15 +2,15 @@ from setuptools import find_packages, setup
 
 
 VERSION = {}
-with open("pob/version.py", "r") as version_file:
+with open("colt/version.py", "r") as version_file:
     exec(version_file.read(), VERSION)
 
 setup(
-    name="pob",
+    name="colt",
     version=VERSION["VERSION"],
     author="altescy",
     author_email="altescy@fastmail.com",
-    description="pob: Python Object Builder",
+    description="A configuration utility for Python object.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     classifiers=[
@@ -18,8 +18,8 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.7",
     ],
-    keywords="json python object",
-    url="https://github.com/altescy/pob",
+    keywords="config python object",
+    url="https://github.com/altescy/colt",
     license='MIT License',
     packages=find_packages(),
     install_requires=[],

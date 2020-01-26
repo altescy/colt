@@ -1,42 +1,42 @@
 import typing as tp
 
-import pob
+import colt
 
 
-@pob.register("foo")
+@colt.register("foo")
 class Foo:
     def __init__(self, x: str) -> None:
         self.x = x
 
 
-@pob.register("bar")
+@colt.register("bar")
 class Bar:
     def __init__(self, foos: tp.List[Foo]) -> None:
         self.foos = foos
 
 
-@pob.register("baz")
+@colt.register("baz")
 class Baz(Foo):
     def __init__(self, x: str, y: int = None) -> None:
         super().__init__(x)
         self.y = y
 
 
-@pob.register("qux")
+@colt.register("qux")
 class Qux:
     def __init__(self, x: tp.Set[int]) -> None:
         self.x = x
 
 
-@pob.register("corge")
+@colt.register("corge")
 class Corge:
     def __init__(self, x) -> None:
         self.x = x
 
 
-class TestPob:
+class Testcolt:
     @staticmethod
-    def test_pob_with_type():
+    def test_colt_with_type():
         config = {
             "bar": {
                 "@type": "bar",
@@ -51,7 +51,7 @@ class TestPob:
             ]
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert isinstance(obj["bar"], Bar)
         assert isinstance(obj["bar"].foos, list)
@@ -60,7 +60,7 @@ class TestPob:
         assert isinstance(obj["foos"][0], Foo)
 
     @staticmethod
-    def test_pob_with_less_type():
+    def test_colt_with_less_type():
         config = {
             "@type": "bar",
             "foos": [
@@ -69,20 +69,20 @@ class TestPob:
             ]
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert isinstance(obj, Bar)
         assert isinstance(obj.foos, list)
         assert isinstance(obj.foos[0], Foo)
 
     @staticmethod
-    def test_pob_with_optional():
+    def test_colt_with_optional():
         config = {
             "@type": "baz",
             "x": "hello",
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert isinstance(obj, Baz)
         assert obj.x == "hello"
@@ -94,12 +94,12 @@ class TestPob:
             "y": 123,
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert obj.y == 123
 
     @staticmethod
-    def test_pob_with_subclass():
+    def test_colt_with_subclass():
         config = {
             "@type": "bar",
             "foos": [
@@ -108,7 +108,7 @@ class TestPob:
             ]
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert isinstance(obj, Bar)
         assert isinstance(obj.foos[0], Foo)
@@ -121,20 +121,20 @@ class TestPob:
             "x": [1, 2, 3, 3],
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert isinstance(obj, Qux)
         assert isinstance(obj.x, set)
         assert len(obj.x) == 3
 
     @staticmethod
-    def test_pob_without_annotation():
+    def test_colt_without_annotation():
         config = {
             "@type": "corge",
             "x": ["a", "b"],
         }
 
-        obj = pob.build(config)
+        obj = colt.build(config)
 
         assert isinstance(obj, Corge)
         assert isinstance(obj.x, list)

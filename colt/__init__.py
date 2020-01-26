@@ -2,8 +2,8 @@ import typing as tp
 
 from functools import wraps
 
-from pob.type_store import TypeStore
-from pob.builder import ColtBuilder
+from colt.type_store import TypeStore
+from colt.builder import ColtBuilder
 
 
 def register(name: str):

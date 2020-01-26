@@ -2,7 +2,7 @@
 
 .eggs/
 .mypy_cache
-pob.egg-info/
+colt.egg-info/
 build/
 dist/
 pip-wheel-metadata/
