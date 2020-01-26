@@ -2,7 +2,7 @@
 
 .eggs/
 .mypy_cache
-logexp.egg-info/
+pob.egg-info/
 build/
 dist/
 pip-wheel-metadata/
