@@ -1,0 +1,11 @@
+FROM python:3.7
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+COPY ./dev-requirements.txt ./dev-requirements.txt
+RUN pip install -r dev-requirements.txt
+
+WORKDIR /work
+
+CMD ["/bin/bash"]
