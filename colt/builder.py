@@ -42,10 +42,6 @@ class ColtBuilder:
             value_cls = args[0] if args else None
             return set(self._build(x, value_cls) for x in config)
 
-        if origin in (tp.Set, set):
-            value_cls = args[0] if args else None
-            return set(self._build(x, value_cls) for x in config)
-
         if origin in (tp.Tuple, tuple):
             if not args:
                 return tuple(self._build(x) for x in config)
@@ -53,10 +49,10 @@ class ColtBuilder:
             if len(args) == 2 and args[1] == Ellipsis:
                 return tuple(self._build(x, args[0]) for x in config)
 
-            return [
+            return tuple(
                 self._build(value_config, value_cls)
                 for value_config, value_cls in zip(config, args)
-            ]
+            )
 
         if origin in (tp.Dict, dict):
             key_cls = args[0] if args else None
