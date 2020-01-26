@@ -2,13 +2,21 @@ colt
 ===
 
 [![Actions Status](https://github.com/altescy/colt/workflows/build/badge.svg)](https://github.com/altescy/colt)
-
+[![Python version](https://img.shields.io/pypi/pyversions/colt)](https://github.com/altescy/colt)
+[![pypi version](https://img.shields.io/pypi/v/colt)](https://pypi.org/project/colt/)
+[![license](https://img.shields.io/github/license/altescy/colt)](https://github.com/altescy/colt/blob/master/LICENSE)
 
 ## Introduction
 
 `colt` is a configuration utility for Python object.
 `colt` constructs Python object from configuration dict which is convertable into JSON.
 
+
+## Installation
+
+```
+pip install colt
+```
 
 ## Example
 
