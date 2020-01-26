@@ -1,7 +1,5 @@
 import typing as tp
 
-from functools import wraps
-
 from colt.type_store import TypeStore
 from colt.builder import ColtBuilder
 
