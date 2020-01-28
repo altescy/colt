@@ -52,6 +52,12 @@ class Waldo:
         self.x = x
 
 
+@colt.register("fred")
+class Fred:
+    def __init__(self, x: tp.Any) -> None:
+        self.x = x
+
+
 class Testcolt:
     @staticmethod
     def test_colt_with_type():
@@ -217,3 +223,14 @@ class Testcolt:
         assert isinstance(obj, Waldo)
         assert isinstance(obj.x, Foo)
         assert obj.x.x == "hello"
+
+    @staticmethod
+    def test_colt_any():
+        config = {
+            "@type": "fred",
+            "x": {"@type": "foo", "x": "hello"}
+        }
+
+        obj = colt.build(config)
+
+        assert isinstance(obj.x, Foo)

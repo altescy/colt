@@ -28,6 +28,9 @@ class ColtBuilder:
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
+        if annotation == tp.Any:
+            annotation = None
+
         origin = getattr(annotation, "__origin__", None)
         args = getattr(annotation, "__args__", [])
 
