@@ -24,6 +24,14 @@ class ColtBuilder:
             return args[0]
         return annotation
 
+    @staticmethod
+    def _construct(T: tp.Type, kwargs: tp.Dict[str, tp.Any]) -> tp.Any:
+        colt_constructor = getattr(T, "_colt_constructor", None)
+        if colt_constructor:
+            constructor = getattr(T, colt_constructor)
+            return constructor(kwargs)
+        return T(**kwargs)
+
     def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
         if annotation is not None:
             annotation = self._remove_optional(annotation)
@@ -101,11 +109,11 @@ class ColtBuilder:
                 raise ConfigurationError(f"{T} is not subclass of {annotation}")
 
         if not config:
-            return T()
+            return self._construct(T, {})
 
         type_hints = tp.get_type_hints(T.__init__)
-        args = {
+        kwargs = {
             key: self._build(val, type_hints.get(key))
             for key, val in config.items()
         }
-        return T(**args)
+        return self._construct(T, kwargs)

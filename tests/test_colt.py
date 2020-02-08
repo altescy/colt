@@ -57,6 +57,16 @@ class Fred:
     def __init__(self, x: tp.Any) -> None:
         self.x = x
 
+@colt.register("plugh", constructor="from_dict")
+class Plugh:
+    def __init__(self, x: str) -> None:
+        self.x = x
+
+    @classmethod
+    def from_dict(cls, plugh_dict: tp.Dict[str, tp.Any]) -> "Plugh":
+        plugh_dict["x"] = "from_dict:" + plugh_dict["x"]
+        return cls(**plugh_dict)
+
 
 class Testcolt:
     @staticmethod
@@ -234,3 +244,14 @@ class Testcolt:
         obj = colt.build(config)
 
         assert isinstance(obj.x, Foo)
+
+    @staticmethod
+    def test_colt_constructor():
+        config = {
+            "@type": "plugh",
+            "x": "plugh"
+        }
+
+        obj = colt.build(config)
+
+        assert obj.x == "from_dict:plugh"
