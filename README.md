@@ -8,8 +8,8 @@ colt
 
 ## Introduction
 
-`colt` is a configuration utility for Python object.
-`colt` constructs Python object from configuration dict which is convertable into JSON.
+`colt` is a configuration utility for Python objects.
+`colt` constructs Python objects from a configuration dict which is convertable into JSON.
 
 
 ## Installation
