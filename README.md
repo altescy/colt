@@ -10,6 +10,7 @@ colt
 
 `colt` is a configuration utility for Python objects.
 `colt` constructs Python objects from a configuration dict which is convertable into JSON.
+(Inspired by [AllenNLP](https://github.com/allenai/allennlp))
 
 
 ## Installation
