@@ -10,9 +10,11 @@ from colt.type_store import TypeStore
 
 class ColtBuilder:
     _DEFAULT_TYPEKEY = "@type"
+    _DEFAULT_ARGSKEY = "*"
 
-    def __init__(self, typekey: str = None) -> None:
+    def __init__(self, typekey: str = None, argskey: str = None) -> None:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
+        self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
 
     def __call__(self, config: tp.Any) -> tp.Any:
         return self._build(config)
@@ -33,12 +35,13 @@ class ColtBuilder:
         return annotation
 
     @staticmethod
-    def _construct(T: tp.Type, kwargs: tp.Dict[str, tp.Any]) -> tp.Any:
+    def _construct(T: tp.Type, args: tp.List[tp.Any],
+                   kwargs: tp.Dict[str, tp.Any]) -> tp.Any:
         colt_constructor = getattr(T, "_colt_constructor", None)
         if colt_constructor:
             constructor = getattr(T, colt_constructor)
-            return constructor(kwargs)
-        return T(**kwargs)
+            return constructor(args, kwargs)
+        return T(*args, **kwargs)
 
     def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
         if annotation is not None:
@@ -130,9 +133,14 @@ class ColtBuilder:
         if not config:
             return self._construct(T, {})
 
+        args_config = config.pop(self._argskey, [])
+        if not isinstance(args_config, list):
+            raise ConfigurationError("args must be a list")
+        args = [self._build(val) for val in args_config]
+
         type_hints = tp.get_type_hints(T.__init__)
         kwargs = {
             key: self._build(val, type_hints.get(key))
             for key, val in config.items()
         }
-        return self._construct(T, kwargs)
+        return self._construct(T, args, kwargs)

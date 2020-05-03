@@ -60,13 +60,16 @@ class Fred:
 
 @colt.register("plugh", constructor="from_dict")
 class Plugh:
-    def __init__(self, x: str) -> None:
+    def __init__(self, x: str, y: str) -> None:
         self.x = x
+        self.y = y
 
     @classmethod
-    def from_dict(cls, plugh_dict: tp.Dict[str, tp.Any]) -> "Plugh":
-        plugh_dict["x"] = "from_dict:" + plugh_dict["x"]
-        return cls(**plugh_dict)
+    def from_dict(cls, args: tp.List[tp.Any],
+                  kwargs: tp.Dict[str, tp.Any]) -> "Plugh":
+        args = [str(val) + "_args" for val in args]
+        kwargs = {key: str(val) + "_kwargs" for key, val in kwargs.items()}
+        return cls(*args, **kwargs)
 
 
 class Testcolt:
@@ -278,11 +281,12 @@ class Testcolt:
 
     @staticmethod
     def test_colt_constructor():
-        config = {"@type": "plugh", "x": "plugh"}
+        config = {"@type": "plugh", "*": ["plugh"], "y": "plugh"}
 
         obj = colt.build(config)
 
-        assert obj.x == "from_dict:plugh"
+        assert obj.x == "plugh_args"
+        assert obj.y == "plugh_kwargs"
 
     @staticmethod
     def test_colt_import():
