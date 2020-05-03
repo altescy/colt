@@ -21,6 +21,8 @@ pip install colt
 
 ## Example
 
+#### Basic Usage
+
 ```python
 import typing as tp
 import colt
@@ -37,7 +39,7 @@ class Bar:
 
 if __name__ == "__main__":
     config = {
-        "@type": "bar",  # specify type-name with `@type`
+        "@type": "bar",  # specify type name with `@type`
         "foos": [
             {"message": "hello"},  # type of this is inferred from type-hint
             {"message": "world"},
@@ -50,4 +52,34 @@ if __name__ == "__main__":
 
     print(" ".join(foo.message for foo in bar.foos))
         # => "hello world"
+```
+
+#### `scikit-learn` Configuration
+
+```python
+import colt
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+if __name__ == "__main__":
+    config = {
+        # import types automatically if type name is not registerd
+        "@type": "sklearn.ensemble.VotingClassifier",
+        "estimators": [
+            ("rfc", { "@type": "sklearn.ensemble.RandomForestClassifier",
+                      "n_estimators": 10 }),
+            ("svc", { "@type": "sklearn.svm.SVC",
+                      "gamma": "scale" }),
+        ]
+    }
+
+    X, y = load_iris(return_X_y=True)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y)
+
+    model = colt.build(config)
+    model.fit(X_train, y_train)
+
+    valid_accuracy = model.score(X_valid, y_valid)
+    print(f"valid_accuracy: {valid_accuracy}")
 ```
