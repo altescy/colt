@@ -2,6 +2,7 @@
 import typing as tp
 
 import copy
+import importlib
 
 from colt.error import ConfigurationError
 from colt.type_store import TypeStore
@@ -15,6 +16,13 @@ class ColtBuilder:
 
     def __call__(self, config: tp.Any) -> tp.Any:
         return self._build(config)
+
+    @staticmethod
+    def _get_external_type(type_path: str) -> tp.Any:
+        module_path, type_name = type_path.rsplit(".", 1)
+        module = importlib.import_module(module_path)
+        T = getattr(module, type_name, None)
+        return T
 
     @staticmethod
     def _remove_optional(annotation: type):
@@ -106,7 +114,15 @@ class ColtBuilder:
         T = origin or annotation  # type: ignore
         if self._typekey in config:
             type_name = config.pop(self._typekey)
-            T = TypeStore.get(type_name)
+
+            try:
+                T = TypeStore.get(type_name)
+            except KeyError:
+                T = self._get_external_type(type_name)
+
+            if T is None:
+                raise ConfigurationError(f"type not found error: {type_name}")
+
             if annotation is not None and not issubclass(T, annotation):
                 raise ConfigurationError(
                     f"{T} is not subclass of {annotation}")
