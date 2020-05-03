@@ -62,14 +62,14 @@ class ColtBuilder:
 
             return tuple(
                 self._build(value_config, value_cls)
-                for value_config, value_cls in zip(config, args)
-            )
+                for value_config, value_cls in zip(config, args))
 
         if origin in (tp.Dict, dict):
             key_cls = args[0] if args else None
             value_cls = args[1] if args else None
             return {
-                self._build(key_config, key_cls): self._build(value_config, value_cls)
+                self._build(key_config, key_cls):
+                self._build(value_config, value_cls)
                 for key_config, value_config in config.items()
             }
 
@@ -82,11 +82,13 @@ class ColtBuilder:
             for value_cls in args:
                 try:
                     return self._build(value_config, value_cls)
-                except (ValueError, TypeError, ConfigurationError, AttributeError):
+                except (ValueError, TypeError, ConfigurationError,
+                        AttributeError):
                     value_config = copy.deepcopy(config)
                     continue
 
-            raise ConfigurationError(f"Failed to construct argument with type {annotation}")
+            raise ConfigurationError(
+                f"Failed to construct argument with type {annotation}")
 
         if isinstance(config, (list, set, tuple)):
             T = type(config)
@@ -101,12 +103,13 @@ class ColtBuilder:
         if annotation is None and self._typekey not in config:
             return {key: self._build(val) for key, val in config.items()}
 
-        T = origin or annotation # type: ignore
+        T = origin or annotation  # type: ignore
         if self._typekey in config:
             type_name = config.pop(self._typekey)
             T = TypeStore.get(type_name)
             if annotation is not None and not issubclass(T, annotation):
-                raise ConfigurationError(f"{T} is not subclass of {annotation}")
+                raise ConfigurationError(
+                    f"{T} is not subclass of {annotation}")
 
         if not config:
             return self._construct(T, {})

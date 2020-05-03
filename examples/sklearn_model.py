@@ -27,11 +27,21 @@ class SklearnModelWrapper:
 
 if __name__ == "__main__":
     config = {
-        "@type": "sklearn-model",
-        "@model": "ensemble.VotingClassifier",
+        "@type":
+        "sklearn-model",
+        "@model":
+        "ensemble.VotingClassifier",
         "estimators": [
-            ("rfc", {"@type": "sklearn-model", "@model": "ensemble.RandomForestClassifier", "n_estimators": 10}),
-            ("svc", {"@type": "sklearn-model", "@model": "svm.SVC", "gamma": "scale"}),
+            ("rfc", {
+                "@type": "sklearn-model",
+                "@model": "ensemble.RandomForestClassifier",
+                "n_estimators": 10
+            }),
+            ("svc", {
+                "@type": "sklearn-model",
+                "@model": "svm.SVC",
+                "gamma": "scale"
+            }),
         ]
     }
 

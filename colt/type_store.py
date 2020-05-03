@@ -1,6 +1,5 @@
 import typing as tp
 
-
 _DEFAULT_TYPES = {
     "bool": bool,
     "dict": dict,

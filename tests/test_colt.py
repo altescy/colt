@@ -57,6 +57,7 @@ class Fred:
     def __init__(self, x: tp.Any) -> None:
         self.x = x
 
+
 @colt.register("plugh", constructor="from_dict")
 class Plugh:
     def __init__(self, x: str) -> None:
@@ -73,15 +74,28 @@ class Testcolt:
     def test_colt_with_type():
         config = {
             "bar": {
-                "@type": "bar",
+                "@type":
+                "bar",
                 "foos": [
-                    {"@type": "foo", "x": "hello"},
-                    {"@type": "foo", "x": "world"},
+                    {
+                        "@type": "foo",
+                        "x": "hello"
+                    },
+                    {
+                        "@type": "foo",
+                        "x": "world"
+                    },
                 ]
             },
             "foos": [
-                {"@type": "foo", "x": "hoge"},
-                {"@type": "foo", "x": "fuga"},
+                {
+                    "@type": "foo",
+                    "x": "hoge"
+                },
+                {
+                    "@type": "foo",
+                    "x": "fuga"
+                },
             ]
         }
 
@@ -98,8 +112,12 @@ class Testcolt:
         config = {
             "@type": "bar",
             "foos": [
-                {"x": "hello"},
-                {"x": "world"},
+                {
+                    "x": "hello"
+                },
+                {
+                    "x": "world"
+                },
             ]
         }
 
@@ -137,8 +155,14 @@ class Testcolt:
         config = {
             "@type": "bar",
             "foos": [
-                {"x": "hello"},
-                {"@type": "baz", "x": "world", "y": 123},
+                {
+                    "x": "hello"
+                },
+                {
+                    "@type": "baz",
+                    "x": "world",
+                    "y": 123
+                },
             ]
         }
 
@@ -179,8 +203,12 @@ class Testcolt:
         config = {
             "@type": "grault",
             "x": [
-                {"x": "hello"},
-                {"x": [1, 2, 3]},
+                {
+                    "x": "hello"
+                },
+                {
+                    "x": [1, 2, 3]
+                },
             ]
         }
 
@@ -196,8 +224,12 @@ class Testcolt:
         config = {
             "@type": "garply",
             "x": {
-                "a": {"x": "hello"},
-                "b": {"x": "world"},
+                "a": {
+                    "x": "hello"
+                },
+                "b": {
+                    "x": "world"
+                },
             }
         }
 
@@ -225,7 +257,9 @@ class Testcolt:
 
         config = {
             "@type": "waldo",
-            "x": {"x": "hello"},
+            "x": {
+                "x": "hello"
+            },
         }
 
         obj = colt.build(config)
@@ -236,10 +270,7 @@ class Testcolt:
 
     @staticmethod
     def test_colt_any():
-        config = {
-            "@type": "fred",
-            "x": {"@type": "foo", "x": "hello"}
-        }
+        config = {"@type": "fred", "x": {"@type": "foo", "x": "hello"}}
 
         obj = colt.build(config)
 
@@ -247,10 +278,7 @@ class Testcolt:
 
     @staticmethod
     def test_colt_constructor():
-        config = {
-            "@type": "plugh",
-            "x": "plugh"
-        }
+        config = {"@type": "plugh", "x": "plugh"}
 
         obj = colt.build(config)
 
