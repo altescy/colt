@@ -3,6 +3,7 @@ import typing as tp
 from colt.type_store import TypeStore
 from colt.builder import ColtBuilder
 from colt.utils import import_modules
+from colt.version import VERSION as __version__
 
 
 def register(name: str, constructor: str = None):
