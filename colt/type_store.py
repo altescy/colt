@@ -1,8 +1,25 @@
 import typing as tp
 
+_DEFAULT_TYPES = {
+    "bool": bool,
+    "byte": bytes,
+    "bytearray": bytearray,
+    "memoryview": memoryview,
+    "complex": complex,
+    "dict": dict,
+    "float": float,
+    "frozenset": frozenset,
+    "int": int,
+    "list": list,
+    "range": range,
+    "set": set,
+    "str": str,
+    "tuple": tuple,
+}
+
 
 class TypeStore:
-    _types: tp.Dict[str, tp.Type] = {}
+    _types: tp.Dict[str, tp.Type] = _DEFAULT_TYPES
 
     @classmethod
     def add(cls, name: str, T: tp.Type, constructor: str = None) -> None:
