@@ -136,7 +136,7 @@ class ColtBuilder:
                     f"{T} is not subclass of {annotation}")
 
         if not config:
-            return self._construct(T, {})
+            return self._construct(T, [], {})
 
         args_config = config.pop(self._argskey, [])
         if not isinstance(args_config, list):
