@@ -1,45 +1,19 @@
-import typing as tp
 import colt
-import importlib
 
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from sklearn.base import BaseEstimator
-
-
-@colt.register("sklearn-model", constructor="from_dict")
-class SklearnModelWrapper:
-    @classmethod
-    def from_dict(cls, model_dict: tp.Dict[str, tp.Any]) -> BaseEstimator:
-        model_path = model_dict.pop("@model")
-        model_path = "sklearn." + model_path
-
-        module_path, model_name = model_path.rsplit(".", 1)
-
-        module = importlib.import_module(module_path)
-        model_cls = getattr(module, model_name)
-
-        if not issubclass(model_cls, BaseEstimator):
-            raise ValueError(f"{model_path} is not an estimator")
-
-        return model_cls(**model_dict)
-
 
 if __name__ == "__main__":
     config = {
         "@type":
-        "sklearn-model",
-        "@model":
-        "ensemble.VotingClassifier",
+        "sklearn.ensemble.VotingClassifier",
         "estimators": [
             ("rfc", {
-                "@type": "sklearn-model",
-                "@model": "ensemble.RandomForestClassifier",
+                "@type": "sklearn.ensemble.RandomForestClassifier",
                 "n_estimators": 10
             }),
             ("svc", {
-                "@type": "sklearn-model",
-                "@model": "svm.SVC",
+                "@type": "sklearn.svm.SVC",
                 "gamma": "scale"
             }),
         ]
