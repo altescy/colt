@@ -41,13 +41,18 @@ class ColtBuilder:
         return annotation
 
     @staticmethod
-    def _construct(T: tp.Type, args: tp.List[tp.Any],
-                   kwargs: tp.Dict[str, tp.Any]) -> tp.Any:
+    def _get_constructor_and_typehints(
+            T: tp.Any) -> tp.Tuple[tp.Callable, tp.Dict[str, tp.Any]]:
         colt_constructor = getattr(T, "_colt_constructor", None)
+
         if colt_constructor:
             constructor = getattr(T, colt_constructor)
-            return constructor(args, kwargs)
-        return T(*args, **kwargs)
+            typehint = tp.get_type_hints(constructor)
+        else:
+            constructor = T
+            typehint = tp.get_type_hints(T.__init__)
+
+        return constructor, typehint
 
     def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
         if annotation is not None:
@@ -136,17 +141,18 @@ class ColtBuilder:
                 warnings.warn(f"{T} is not subclass of {annotation}",
                               RuntimeWarning)
 
+        constructor, type_hints = self._get_constructor_and_typehints(T)
+
         if not config:
-            return self._construct(T, [], {})
+            return constructor()
 
         args_config = config.pop(self._argskey, [])
-        if not isinstance(args_config, list):
-            raise ConfigurationError("args must be a list")
+        if not isinstance(args_config, (list, tuple)):
+            raise ConfigurationError("args must be a list or tuple")
         args = [self._build(val) for val in args_config]
 
-        type_hints = tp.get_type_hints(T.__init__)
         kwargs = {
             key: self._build(val, type_hints.get(key))
             for key, val in config.items()
         }
-        return self._construct(T, args, kwargs)
+        return constructor(*args, **kwargs)
