@@ -23,7 +23,7 @@ class SklearnSplitValidator(SklearnValidator):
 
     def _validate(self, model: BaseEstimator, X: np.ndarray, y: np.ndarray):
         X_train, X_test, y_train, y_test = train_test_split(
-            model, X, y, **self._options)
+            X, y, **self._options)
 
         train_score = np.array(model.score(X_train, y_train))
         test_score = np.array(model.score(X_test, y_test))
