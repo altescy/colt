@@ -3,6 +3,7 @@ import typing as tp
 
 import copy
 import importlib
+import warnings
 
 from colt.error import ConfigurationError
 from colt.type_store import TypeStore
@@ -132,8 +133,8 @@ class ColtBuilder:
                 raise ConfigurationError(f"type not found error: {type_name}")
 
             if annotation is not None and not issubclass(T, annotation):
-                raise ConfigurationError(
-                    f"{T} is not subclass of {annotation}")
+                warnings.warn(f"{T} is not subclass of {annotation}",
+                              RuntimeWarning)
 
         if not config:
             return self._construct(T, [], {})
