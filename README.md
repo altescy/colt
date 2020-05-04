@@ -6,6 +6,12 @@ colt
 [![pypi version](https://img.shields.io/pypi/v/colt)](https://pypi.org/project/colt/)
 [![license](https://img.shields.io/github/license/altescy/colt)](https://github.com/altescy/colt/blob/master/LICENSE)
 
+## Quick Links
+
+- [Installation](#Installation)
+- [Basic Examples](Examples)
+- [kaggle Titanic Example](https://github.com/altescy/colt/tree/master/examples/titanic)
+
 ## Introduction
 
 `colt` is a configuration utility for Python objects.
@@ -19,7 +25,7 @@ colt
 pip install colt
 ```
 
-## Example
+## Examples
 
 #### Basic Usage
 
