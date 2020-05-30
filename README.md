@@ -93,7 +93,8 @@ if __name__ == "__main__":
 
 ### `Registrable` Class
 
-Using the `Registrable` class, you can devide namespace into each class.
+By using the `Registrable` class, you can devide namespace into each class.
+In a following example, `Foo` and `Bar` have different namespaces.
 
 ```python
 import colt
