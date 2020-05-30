@@ -71,6 +71,22 @@ class Plugh:
         return cls(x, y)
 
 
+class MyRegistrable(colt.Registrable):
+    pass
+
+
+@MyRegistrable.register("foo")
+class MyRegistrableFoo(MyRegistrable):
+    def __init__(self, message: str) -> None:
+        self.message = message
+
+
+@colt.register("my_class")
+class MyClass(MyRegistrable):
+    def __init__(self, my_registrable: MyRegistrable):
+        self.my_registrable = my_registrable
+
+
 class Testcolt:
     @staticmethod
     def test_colt_with_type():
@@ -309,3 +325,17 @@ class Testcolt:
 
         assert isinstance(obj[0], tuple)
         assert isinstance(obj[1], range)
+
+    @staticmethod
+    def test_registrable():
+        config = {
+            "@type": "my_class",
+            "my_registrable": {
+                "@type": "foo",
+                "message": "abc",
+            }
+        }
+
+        obj = colt.build(config)
+
+        assert obj.my_registrable.message == "abc"

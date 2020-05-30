@@ -6,7 +6,8 @@ import importlib
 import warnings
 
 from colt.error import ConfigurationError
-from colt.type_store import TypeStore
+from colt.default_registry import DefaultRegistry
+from colt.registrable import Registrable
 
 
 class ColtBuilder:
@@ -53,6 +54,24 @@ class ColtBuilder:
             typehint = tp.get_type_hints(T.__init__)
 
         return constructor, typehint
+
+    def _get_type_by_name(self, name: str, annotation: tp.Type = None):
+        try:
+            if annotation and issubclass(annotation, Registrable):
+                T = annotation.get(name)
+            else:
+                T = DefaultRegistry.get(name)
+        except KeyError:
+            T = self._get_external_type(name)
+
+        if T is None:
+            raise ConfigurationError(f"type not found error: {name}")
+
+        if annotation is not None and not issubclass(T, annotation):
+            warnings.warn(f"{T} is not subclass of {annotation}",
+                          RuntimeWarning)
+
+        return T
 
     def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
         if annotation is not None:
@@ -128,18 +147,7 @@ class ColtBuilder:
         T = origin or annotation  # type: ignore
         if self._typekey in config:
             type_name = config.pop(self._typekey)
-
-            try:
-                T = TypeStore.get(type_name)
-            except KeyError:
-                T = self._get_external_type(type_name)
-
-            if T is None:
-                raise ConfigurationError(f"type not found error: {type_name}")
-
-            if annotation is not None and not issubclass(T, annotation):
-                warnings.warn(f"{T} is not subclass of {annotation}",
-                              RuntimeWarning)
+            T = self._get_type_by_name(type_name, annotation)
 
         constructor, type_hints = self._get_constructor_and_typehints(T)
 
