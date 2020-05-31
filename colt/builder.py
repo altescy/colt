@@ -2,7 +2,6 @@
 import typing as tp
 
 import copy
-import warnings
 
 from colt.error import ConfigurationError
 from colt.default_registry import DefaultRegistry
@@ -39,6 +38,28 @@ class ColtBuilder:
             raise ConfigurationError(f"type not found error: {name}")
 
         return constructor
+
+    def _construct_with_args(self, constructor: tp.Callable,
+                             config: tp.Dict[str, tp.Any]) -> tp.Any:
+        if not config:
+            return constructor()
+
+        args_config = config.pop(self._argskey, [])
+        if not isinstance(args_config, (list, tuple)):
+            raise ConfigurationError("args must be a list or tuple")
+        args = [self._build(val) for val in args_config]
+
+        if isinstance(constructor, type):
+            type_hints = tp.get_type_hints(getattr(constructor, "__init__"))
+        else:
+            type_hints = tp.get_type_hints(constructor)
+
+        kwargs = {
+            key: self._build(val, type_hints.get(key))
+            for key, val in config.items()
+        }
+
+        return constructor(*args, **kwargs)
 
     def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
         if annotation is not None:
@@ -117,21 +138,4 @@ class ColtBuilder:
         else:
             constructor = origin or annotation  # type: ignore
 
-        if not config:
-            return constructor()
-
-        args_config = config.pop(self._argskey, [])
-        if not isinstance(args_config, (list, tuple)):
-            raise ConfigurationError("args must be a list or tuple")
-        args = [self._build(val) for val in args_config]
-
-        if isinstance(constructor, type):
-            type_hints = tp.get_type_hints(getattr(constructor, "__init__"))
-        else:
-            type_hints = tp.get_type_hints(constructor)
-
-        kwargs = {
-            key: self._build(val, type_hints.get(key))
-            for key, val in config.items()
-        }
-        return constructor(*args, **kwargs)
+        return self._construct_with_args(constructor, config)
