@@ -1,7 +1,7 @@
 import colt
 
 
-def test_colt_buildintypes():
+def test_colt_builtintypes():
     config = [{
         "@type": "tuple",
         "*": [[1, 2, 3]]
