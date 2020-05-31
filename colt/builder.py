@@ -23,11 +23,10 @@ class ColtBuilder:
 
     @staticmethod
     def _get_external_type(type_path: str) -> tp.Any:
-        try:
-            module_path, type_name = type_path.rsplit(".", 1)
-        except ValueError:
+        if "." not in type_path:
             return None
 
+        module_path, type_name = type_path.rsplit(".", 1)
         module = importlib.import_module(module_path)
         T = getattr(module, type_name, None)
 
