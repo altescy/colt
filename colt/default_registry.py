@@ -1,25 +1,21 @@
 from colt.registrable import Registrable
 
-_DEFAULT_TYPES = {
-    "bool": bool,
-    "byte": bytes,
-    "bytearray": bytearray,
-    "memoryview": memoryview,
-    "complex": complex,
-    "dict": dict,
-    "float": float,
-    "frozenset": frozenset,
-    "int": int,
-    "list": list,
-    "range": range,
-    "set": set,
-    "str": str,
-    "tuple": tuple,
-}
-
 
 class DefaultRegistry(Registrable):
     """default type store"""
 
 
-Registrable._registry[DefaultRegistry] = _DEFAULT_TYPES  # pylint:disable=protected-access
+DefaultRegistry.register("bool")(bool)
+DefaultRegistry.register("byte")(bytes)
+DefaultRegistry.register("bytearray")(bytearray)
+DefaultRegistry.register("memoryview")(memoryview)
+DefaultRegistry.register("complex")(complex)
+DefaultRegistry.register("dict")(dict)
+DefaultRegistry.register("float")(float)
+DefaultRegistry.register("frozenset")(frozenset)
+DefaultRegistry.register("int")(int)
+DefaultRegistry.register("list")(list)
+DefaultRegistry.register("range")(range)
+DefaultRegistry.register("set")(set)
+DefaultRegistry.register("str")(str)
+DefaultRegistry.register("tuple")(tuple)

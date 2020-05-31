@@ -2,7 +2,6 @@
 import typing as tp
 
 import copy
-import importlib
 import warnings
 
 from colt.error import ConfigurationError
@@ -22,17 +21,6 @@ class ColtBuilder:
         return self._build(config, cls)
 
     @staticmethod
-    def _get_external_type(type_path: str) -> tp.Any:
-        if "." not in type_path:
-            return None
-
-        module_path, type_name = type_path.rsplit(".", 1)
-        module = importlib.import_module(module_path)
-        T = getattr(module, type_name, None)
-
-        return T
-
-    @staticmethod
     def _remove_optional(annotation: type):
         origin = getattr(annotation, "__origin__", None)
         args = getattr(annotation, "__args__", ())
@@ -41,36 +29,16 @@ class ColtBuilder:
         return annotation
 
     @staticmethod
-    def _get_constructor_and_typehints(
-            T: tp.Any) -> tp.Tuple[tp.Callable, tp.Dict[str, tp.Any]]:
-        colt_constructor = getattr(T, "_colt_constructor", None)
-
-        if colt_constructor:
-            constructor = getattr(T, colt_constructor)
-            typehint = tp.get_type_hints(constructor)
+    def _get_constructor_by_name(name: str, annotation: tp.Type = None):
+        if annotation and issubclass(annotation, Registrable):
+            constructor = annotation.by_name(name)
         else:
-            constructor = T
-            typehint = tp.get_type_hints(T.__init__)
+            constructor = DefaultRegistry.by_name(name)
 
-        return constructor, typehint
-
-    def _get_type_by_name(self, name: str, annotation: tp.Type = None):
-        try:
-            if annotation and issubclass(annotation, Registrable):
-                T = annotation.by_name(name)
-            else:
-                T = DefaultRegistry.by_name(name)
-        except KeyError:
-            T = self._get_external_type(name)
-
-        if T is None:
+        if constructor is None:
             raise ConfigurationError(f"type not found error: {name}")
 
-        if annotation is not None and not issubclass(T, annotation):
-            warnings.warn(f"{T} is not subclass of {annotation}",
-                          RuntimeWarning)
-
-        return T
+        return constructor
 
     def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
         if annotation is not None:
@@ -143,12 +111,11 @@ class ColtBuilder:
         if annotation is None and self._typekey not in config:
             return {key: self._build(val) for key, val in config.items()}
 
-        T = origin or annotation  # type: ignore
         if self._typekey in config:
-            type_name = config.pop(self._typekey)
-            T = self._get_type_by_name(type_name, annotation)
-
-        constructor, type_hints = self._get_constructor_and_typehints(T)
+            class_name = config.pop(self._typekey)
+            constructor = self._get_constructor_by_name(class_name, annotation)
+        else:
+            constructor = origin or annotation  # type: ignore
 
         if not config:
             return constructor()
@@ -157,6 +124,11 @@ class ColtBuilder:
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError("args must be a list or tuple")
         args = [self._build(val) for val in args_config]
+
+        if isinstance(constructor, type):
+            type_hints = tp.get_type_hints(getattr(constructor, "__init__"))
+        else:
+            type_hints = tp.get_type_hints(constructor)
 
         kwargs = {
             key: self._build(val, type_hints.get(key))

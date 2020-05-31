@@ -1,11 +1,15 @@
 import typing as tp
+import importlib
 from collections import defaultdict
 
+from colt.error import ConfigurationError
+
 T = tp.TypeVar("T", bound="Registrable")
+Registry = tp.Dict[tp.Type, tp.Dict[str, tp.Tuple[tp.Type, tp.Optional[str]]]]
 
 
 class Registrable:
-    _registry: tp.Dict[tp.Type, tp.Dict[str, tp.Type]] = defaultdict(dict)
+    _registry: Registry = defaultdict(dict)
 
     @classmethod
     def register(cls: tp.Type[T],
@@ -22,19 +26,47 @@ class Registrable:
                 raise ValueError(
                     f"constructor {constructor} not found in {subclass}")
 
-            setattr(subclass, "_colt_constructor", constructor)
-
-            registry[name] = subclass
+            registry[name] = (subclass, constructor)
 
             return subclass
 
         return decorator
 
     @classmethod
-    def by_name(cls: tp.Type[T], name: str) -> tp.Type[T]:
-        subclass = Registrable._registry[cls].get(name)
+    def by_name(cls: tp.Type[T], name: str) -> tp.Callable[..., T]:
+        subclass, constructor = cls.resolve_class_name(name)
 
-        if subclass is None:
-            raise KeyError(f"type not found: {name}")
+        if not constructor:
+            return subclass
 
-        return subclass
+        return tp.cast(tp.Callable[..., T], getattr(subclass, constructor))
+
+    @classmethod
+    def resolve_class_name(
+            cls: tp.Type[T],
+            name: str) -> tp.Tuple[tp.Type[T], tp.Optional[str]]:
+        registry = Registrable._registry[cls]
+
+        if name in registry:
+            subclass, constructor = registry[name]
+            return subclass, constructor
+
+        if "." in name:
+            submodule, class_name = name.rsplit(".", 1)
+
+            try:
+                module = importlib.import_module(submodule)
+            except ModuleNotFoundError:
+                raise ConfigurationError(
+                    f"module {submodule} not found ({name})")
+
+            try:
+                subclass = getattr(module, class_name)
+                constructor = None
+                return subclass, constructor
+            except AttributeError:
+                raise ConfigurationError(
+                    f"class {class_name} not found in {submodule} ({name})")
+
+        raise ConfigurationError(
+            f"{name} is not a registered name for {cls.__name__}. ")

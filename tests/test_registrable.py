@@ -26,17 +26,6 @@ class MyClass:
         self.bar = bar
 
 
-class Qux:
-    pass
-
-
-@Foo.register("wrapper", constructor="constructor")
-class FooWrapper(Foo):
-    @classmethod
-    def constructor(cls):
-        return Qux()
-
-
 def test_registrable():
     config = {
         "@type": "my_class",
@@ -52,11 +41,3 @@ def test_registrable():
 
     assert isinstance(obj.foo, FooBaz)
     assert isinstance(obj.bar, BarBaz)
-
-
-def test_registrable_wrapper():
-    config = {"@type": "wrapper"}
-
-    obj = colt.build(config, Foo)
-
-    assert isinstance(obj, Qux)
