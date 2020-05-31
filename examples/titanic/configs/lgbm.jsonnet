@@ -27,7 +27,7 @@ local pdpipeline = import 'pdpipeline.jsonnet';
     "subsample_freq": 1,
   },
   "validator": {
-    "@type": "sklearn_cross_validator",
+    "@type": "cross_validator",
     "cv": 5,
     "scoring": {
       "accuracy": "accuracy",

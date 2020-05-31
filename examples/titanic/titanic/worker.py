@@ -9,13 +9,14 @@ import pdpipe as pdp
 from sklearn.base import BaseEstimator
 from sklearn.model_selection._search import BaseSearchCV
 
-from titanic.loggger import create_logger
+from titanic.logger import create_logger
+from titanic.pdp.stages import PdpStage
 from titanic.validator import SklearnValidator
 
 logger = create_logger(__name__)
 
 
-class Worker:
+class Worker(colt.Registrable):
     def __init__(self, train_path: str, test_path: str,
                  random_seed: int) -> None:
         self._train_path = train_path
@@ -53,9 +54,9 @@ class Worker:
         raise NotImplementedError
 
 
-@colt.register("sklearn_worker")
+@Worker.register("sklearn_worker")
 class SklearnWorker(Worker):
-    def __init__(self, pdpipeline: pdp.PdPipelineStage, model: BaseEstimator,
+    def __init__(self, pdpipeline: PdpStage, model: BaseEstimator,
                  validator: SklearnValidator, train_path: str, test_path: str,
                  random_seed: int) -> None:
         super().__init__(train_path, test_path, random_seed)

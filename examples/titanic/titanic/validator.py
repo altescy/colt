@@ -7,7 +7,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.model_selection import train_test_split
 
 
-class SklearnValidator:
+class SklearnValidator(colt.Registrable):
     def __call__(self, model: BaseEstimator, X: np.ndarray, y: np.ndarray):
         return self._validate(model, X, y)
 
@@ -16,7 +16,7 @@ class SklearnValidator:
         raise NotImplementedError
 
 
-@colt.register("sklearn_split_validator")
+@SklearnValidator.register("split_validator")
 class SklearnSplitValidator(SklearnValidator):
     def __init__(self, **options):
         self._options = options
@@ -31,7 +31,7 @@ class SklearnSplitValidator(SklearnValidator):
         return {"train": train_score, "test": test_score}
 
 
-@colt.register("sklearn_cross_validator")
+@SklearnValidator.register("cross_validator")
 class SklearnCrossValidator(SklearnValidator):
     def __init__(self, **options):
         self._options = options

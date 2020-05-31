@@ -6,8 +6,10 @@ import pandas as pd
 import pdpipe as pdp
 from pdpipe.col_generation import ColumnTransformer
 
+from titanic.pdp.stages import PdpStage
 
-@colt.register("pdp:cut")
+
+@PdpStage.register("cut")
 class Cut(ColumnTransformer):
     def __init__(
             self,
@@ -64,7 +66,7 @@ class Cut(ColumnTransformer):
         return cut_series
 
 
-@colt.register("pdp:qcut")
+@PdpStage.register("qcut")
 class Qcut(ColumnTransformer):
     def __init__(
             self,
@@ -116,7 +118,7 @@ class Qcut(ColumnTransformer):
         return qcut_series
 
 
-@colt.register("pdp:fill_na")
+@PdpStage.register("fill_na")
 class FillNa(ColumnTransformer):
     FILL_TYPES = ["mean", "median", "replace", "mode"]
 

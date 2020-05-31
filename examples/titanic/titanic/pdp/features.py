@@ -5,8 +5,10 @@ import colt
 import numpy as np
 import pdpipe as pdp
 
+from titanic.pdp.stages import PdpStage
 
-@colt.register("pdp:add_family_size")
+
+@PdpStage.register("add_family_size")
 class AddFamilySize(pdp.ApplyToRows):
     @staticmethod
     def compute_family_size(row):
@@ -19,7 +21,7 @@ class AddFamilySize(pdp.ApplyToRows):
         )
 
 
-@colt.register("pdp:add_is_alone")
+@PdpStage.register("add_is_alone")
 class AddIsAlone(pdp.ApplyToRows):
     @staticmethod
     def compute_is_alone(row):
@@ -32,7 +34,7 @@ class AddIsAlone(pdp.ApplyToRows):
         )
 
 
-@colt.register("pdp:add_name_title")
+@PdpStage.register("add_name_title")
 class AddNameTitle(pdp.ApplyToRows):
     DEFAULT_TITILES = {
         "Capt": "Officer",
@@ -68,7 +70,7 @@ class AddNameTitle(pdp.ApplyToRows):
         return self._titles.get(title, "other")
 
 
-@colt.register("pdp:add_cabin_category")
+@PdpStage.register("add_cabin_category")
 class AddCabinCategory(pdp.ApplyToRows):
     @staticmethod
     def compute_cabin_category(row):
@@ -83,7 +85,7 @@ class AddCabinCategory(pdp.ApplyToRows):
         )
 
 
-@colt.register("pdp:add_deck")
+@PdpStage.register("add_deck")
 class AddDeck(pdp.ApplyToRows):
     @staticmethod
     def compute_deck(row):

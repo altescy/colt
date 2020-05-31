@@ -18,9 +18,7 @@ def main():
     print(config)
 
     colt.import_modules(args.module)
-    worker = colt.build(config)
-
-    assert isinstance(worker, Worker)
+    worker = colt.build(config, Worker)
 
     predictions = worker()
 

@@ -1,9 +1,9 @@
 {
-  "@type": "pdp:pd_pipeline",
+  "@type": "pd_pipeline",
   "stages": [
     # Fill NA values
     {
-      "@type": "pdp:fill_na",
+      "@type": "fill_na",
       "columns": [
         "Age",
         "Fare"
@@ -11,14 +11,14 @@
       "fill_type": "median"
     },
     {
-      "@type": "pdp:fill_na",
+      "@type": "fill_na",
       "columns": [
         "Embarked",
       ],
       "fill_type": "mode",
     },
     {
-      "@type": "pdp:fill_na",
+      "@type": "fill_na",
       "columns": [
         "Cabin",
       ],
@@ -27,29 +27,29 @@
     },
     # Add Features
     {
-      "@type": "pdp:add_family_size"
+      "@type": "add_family_size"
     },
     {
-      "@type": "pdp:add_is_alone"
+      "@type": "add_is_alone"
     },
     {
-      "@type": "pdp:add_cabin_category"
+      "@type": "add_cabin_category"
     },
     {
-      "@type": "pdp:add_name_title",
+      "@type": "add_name_title",
     },
     {
-      "@type": "pdp:add_deck",
+      "@type": "add_deck",
     },
     {
-      "@type": "pdp:qcut",
+      "@type": "qcut",
       "q": 5,
       "columns": ["Fare"],
       # "result_columns": ["FareBin"],
       "as_str": true,
     },
     {
-      "@type": "pdp:cut",
+      "@type": "cut",
       "bins": 10,
       "columns": ["Age"],
       # "result_columns": ["AgeBin"],
@@ -57,7 +57,7 @@
     },
     # Filter columns
     {
-      "@type": "pdp:col_drop",
+      "@type": "col_drop",
       "columns": [
         "PassengerId",
         "Cabin",
@@ -67,10 +67,10 @@
     },
     # Encode
     {
-      "@type": "pdp:encode"
+      "@type": "encode"
     },
     {
-      "@type": "pdp:one_hot_encode",
+      "@type": "one_hot_encode",
       "columns": ["Pclass", "Sex", "Embarked", "NameTitle", "Deck"],
     },
   ]
