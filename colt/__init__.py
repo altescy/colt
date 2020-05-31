@@ -7,9 +7,9 @@ from colt.utils import import_modules
 from colt.version import VERSION as __version__
 
 
-def register(name: str, constructor: str = None):
+def register(name: str, constructor: str = None, exist_ok: bool = False):
     def decorator(T: tp.Type):
-        DefaultRegistry.register(name, constructor)(T)
+        DefaultRegistry.register(name, constructor, exist_ok)(T)
         return T
 
     return decorator
