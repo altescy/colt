@@ -1,34 +1,40 @@
 import typing as tp
 from collections import defaultdict
 
+T = tp.TypeVar("T", bound="Registrable")
+
 
 class Registrable:
     _registry: tp.Dict[tp.Type, tp.Dict[str, tp.Type]] = defaultdict(dict)
 
     @classmethod
-    def register(cls, name: str, constructor: str = None):
+    def register(cls: tp.Type[T],
+                 name: str,
+                 constructor: str = None,
+                 exist_ok: bool = False):
         registry = Registrable._registry[cls]
 
-        def decorator(T: tp.Type):
-            if name in registry:
+        def decorator(subclass: tp.Type[T]):
+            if not exist_ok and name in registry:
                 raise ValueError(f"type name conflict: {name}")
 
-            if constructor and not hasattr(T, constructor):
-                raise ValueError(f"constructor {constructor} not found in {T}")
+            if constructor and not hasattr(subclass, constructor):
+                raise ValueError(
+                    f"constructor {constructor} not found in {subclass}")
 
-            setattr(T, "_colt_constructor", constructor)
+            setattr(subclass, "_colt_constructor", constructor)
 
-            registry[name] = T
+            registry[name] = subclass
 
-            return T
+            return subclass
 
         return decorator
 
     @classmethod
-    def get(cls, name: str) -> tp.Type:
-        T = Registrable._registry[cls].get(name)
+    def by_name(cls: tp.Type[T], name: str) -> tp.Type[T]:
+        subclass = Registrable._registry[cls].get(name)
 
-        if T is None:
+        if subclass is None:
             raise KeyError(f"type not found: {name}")
 
-        return T
+        return subclass

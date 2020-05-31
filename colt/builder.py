@@ -58,9 +58,9 @@ class ColtBuilder:
     def _get_type_by_name(self, name: str, annotation: tp.Type = None):
         try:
             if annotation and issubclass(annotation, Registrable):
-                T = annotation.get(name)
+                T = annotation.by_name(name)
             else:
-                T = DefaultRegistry.get(name)
+                T = DefaultRegistry.by_name(name)
         except KeyError:
             T = self._get_external_type(name)
 
