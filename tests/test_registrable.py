@@ -55,16 +55,8 @@ def test_registrable():
 
 
 def test_registrable_wrapper():
-    config = {
-        "@type": "my_class",
-        "foo": {
-            "@type": "wrapper"
-        },
-        "bar": {
-            "@type": "baz"
-        }
-    }
+    config = {"@type": "wrapper"}
 
-    obj = colt.build(config)
+    obj = colt.build(config, Foo)
 
-    assert isinstance(obj.foo, Qux)
+    assert isinstance(obj, Qux)

@@ -18,8 +18,8 @@ class ColtBuilder:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
 
-    def __call__(self, config: tp.Any) -> tp.Any:
-        return self._build(config)
+    def __call__(self, config: tp.Any, cls: tp.Type = None) -> tp.Any:
+        return self._build(config, cls)
 
     @staticmethod
     def _get_external_type(type_path: str) -> tp.Any:

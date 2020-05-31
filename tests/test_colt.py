@@ -262,3 +262,12 @@ def test_colt_any():
     obj = colt.build(config)
 
     assert isinstance(obj.x, Foo)
+
+
+def test_build_with_type():
+    config = {"x": "abc"}
+
+    obj = colt.build(config, Foo)
+
+    assert isinstance(obj, Foo)
+    assert obj.x == "abc"

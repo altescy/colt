@@ -15,6 +15,9 @@ def register(name: str, constructor: str = None, exist_ok: bool = False):
     return decorator
 
 
-def build(config: tp.Any, typekey: str = None, argskey: str = None) -> tp.Any:
+def build(config: tp.Any,
+          cls: tp.Type = None,
+          typekey: str = None,
+          argskey: str = None) -> tp.Any:
     builder = ColtBuilder(typekey, argskey)
-    return builder(config)
+    return builder(config, cls)
