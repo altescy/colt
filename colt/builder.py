@@ -1,6 +1,5 @@
 #pylint: disable=too-many-return-statements,too-many-branches
 import typing as tp
-import warnings
 
 import copy
 
