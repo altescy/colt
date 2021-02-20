@@ -1,5 +1,6 @@
 #pylint: disable=too-many-return-statements,too-many-branches
 import typing as tp
+import warnings
 
 import copy
 
@@ -154,8 +155,9 @@ class ColtBuilder:
 
         if not isinstance(config, dict):
             if annotation is not None and not isinstance(config, annotation):
-                raise UserWarning(
-                    f"type mismatch at {param_name}: {annotation}")
+                raise ConfigurationError(
+                    f"type mismatch at {param_name}, expected: "
+                    f"{annotation}, actual type: {type(config)}")
             return config
 
         if annotation is None and self._typekey not in config:
