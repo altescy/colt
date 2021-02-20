@@ -1,5 +1,5 @@
 _MAJOR = "0"
-_MINOR = "5"
+_MINOR = "6"
 _REVISION = "0"
 
 VERSION_SHORT = "{0}.{1}".format(_MAJOR, _MINOR)
