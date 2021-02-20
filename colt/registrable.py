@@ -56,17 +56,18 @@ class Registrable:
 
             try:
                 module = importlib.import_module(submodule)
-            except ModuleNotFoundError:
+            except ModuleNotFoundError as e:
                 raise ConfigurationError(
-                    f"module {submodule} not found ({name})")
+                    f"module {submodule} not found ({name})") from e
 
             try:
                 subclass = getattr(module, class_name)
                 constructor = None
                 return subclass, constructor
-            except AttributeError:
+            except AttributeError as e:
                 raise ConfigurationError(
-                    f"class {class_name} not found in {submodule} ({name})")
+                    f"class {class_name} not found in {submodule} ({name})"
+                ) from e
 
         raise ConfigurationError(
             f"{name} is not a registered name for {cls.__name__}. ")

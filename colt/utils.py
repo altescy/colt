@@ -19,7 +19,7 @@ def import_submodules(package_name: str) -> None:
     path_string = '' if not path else path[0]
 
     for module_finder, name, _ in pkgutil.walk_packages(path):
-        if path_string and module_finder.path != path_string:
+        if path_string and getattr(module_finder, "path") != path_string:
             continue
         subpackage = f"{package_name}.{name}"
         import_submodules(subpackage)
