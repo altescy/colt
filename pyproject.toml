@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "colt"
+version = "0.6.0"
+description = "A configuration utility for Python object."
+authors = ["altescy <altescy@fastmail.com>"]
+license = "MIT License"
+readme = "README.md"
+homepage = "https://github.com/altescy/colt"
+keywords=["config", "python", "object"]
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+]
+packages = [
+    { include = "colt" }
+]
+
+[tool.poetry.urls]
+"Issues" = "https://github.com/altescy/colt/issues"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+python-language-server = "^0.36.2"
+mypy = "^0.812"
+pylint = "^2.6.2"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

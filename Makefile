@@ -1,24 +1,31 @@
-PWD=$(shell pwd)
-PYTHON=python
-PYLINTRC=.pylintrc
-MODULE=colt
-DOCKER=docker
-DOCKERFILE=$(PWD)/docker/Dockerfile.dev
-DOCKER_IMAGE=colt-dev
-DOCKER_CONTAINER=colt-dev-container
+PWD              := $(shell pwd)
+PYTHON           := poetry run python
+PYLINT           := poetry run pylint
+MYPY             := poetry run mypy
+PYTEST           := poetry run pytest
+PYLINTRC         := $(PWD)/.pylintrc
+MYPYINI          := $(PWD)/mypy.ini
+MODULE           := colt
 
+.PHONY: all
+all: clean mypy lint test
 
+.PHONY: lint
 lint:
-	pylint --rcfile=$(PYLINTRC) $(MODULE)
+	PYTHONPATH=$(PWD) $(PYLINT) --rcfile=$(PYLINTRC) $(MODULE)
 
+.PHONY: mypy
 mypy:
-	mypy $(MODULE)
+	PYTHONPATH=$(PWD) $(MYPY)  --config-file $(MYPYINI) $(MODULE)
 
+.PHONY: test
 test:
-	PYTHONPATH=$(PWD) pytest
+	PYTHONPATH=$(PWD) $(PYTEST)
 
+.PHONY: clean
 clean: clean-pyc clean-build
 
+.PHONY: clean-pyc
 clean-pyc:
 	rm -rf .pytest_cache
 	rm -rf .mypy_cache
@@ -27,22 +34,9 @@ clean-pyc:
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
 
+.PHONY: clean-build
 clean-build:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf $(MODULE).egg-info/
 	rm -rf pip-wheel-metadata/
-
-docker: docker-build docker-run
-
-docker-build:
-	$(DOCKER) build -f $(DOCKERFILE) -t $(DOCKER_IMAGE) $(PWD)
-
-docker-run:
-	$(DOCKER) run -it -v $(PWD):/work --name $(DOCKER_CONTAINER) $(DOCKER_IMAGE)
-
-docker-attach:
-	$(DOCKER) attach $(DOCKER_CONTAINER)
-
-docker-rm:
-	$(DOCKER) rm $(DOCKER_CONTAINER)
