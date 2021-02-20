@@ -27,6 +27,7 @@ python = "^3.8"
 python-language-server = "^0.36.2"
 mypy = "^0.812"
 pylint = "^2.6.2"
+pytest = "^6.2.2"
 
 [build-system]
 requires = ["poetry>=0.12"]
