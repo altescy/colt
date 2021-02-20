@@ -1,7 +1,6 @@
 # build artifacts
 
 .eggs/
-.mypy_cache
 colt.egg-info/
 build/
 dist/
@@ -18,3 +17,9 @@ __pycache__
 # testing and continuous integration
 
 .pytest_cache/
+.mypy_cache
+
+
+# env files
+.envrc
+.venv
