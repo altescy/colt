@@ -17,7 +17,7 @@ class ColtBuilder:
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
 
     def __call__(self, config: tp.Any, cls: tp.Type = None) -> tp.Any:
-        return self._build(config, cls)
+        return self._build(config, "", cls)
 
     @staticmethod
     def _remove_optional(annotation: type):
@@ -28,26 +28,37 @@ class ColtBuilder:
         return annotation
 
     @staticmethod
-    def _get_constructor_by_name(name: str, annotation: tp.Type = None):
+    def _get_constructor_by_name(name: str,
+                                 param_name: str,
+                                 annotation: tp.Type = None):
         if annotation and issubclass(annotation, Registrable):
             constructor = annotation.by_name(name)
         else:
             constructor = DefaultRegistry.by_name(name)
 
         if constructor is None:
-            raise ConfigurationError(f"type not found error: {name}")
+            raise ConfigurationError(
+                f"type not found error at `{param_name}`: {name}")
 
         return constructor
 
-    def _construct_with_args(self, constructor: tp.Callable,
-                             config: tp.Dict[str, tp.Any]) -> tp.Any:
+    def _construct_with_args(
+        self,
+        constructor: tp.Callable,
+        config: tp.Dict[str, tp.Any],
+        param_name: str,
+    ) -> tp.Any:
         if not config:
             return constructor()
 
         args_config = config.pop(self._argskey, [])
         if not isinstance(args_config, (list, tuple)):
-            raise ConfigurationError("args must be a list or tuple")
-        args = [self._build(val) for val in args_config]
+            raise ConfigurationError(
+                f"args must be a list or tuple: {param_name}")
+        args = [
+            self._build(val, param_name + f".{self._argskey}.{i}")
+            for i, val in enumerate(args_config)
+        ]
 
         if isinstance(constructor, type):
             type_hints = tp.get_type_hints(getattr(constructor, "__init__"))
@@ -55,13 +66,20 @@ class ColtBuilder:
             type_hints = tp.get_type_hints(constructor)
 
         kwargs = {
-            key: self._build(val, type_hints.get(key))
+            key: self._build(val, param_name + f".{key}", type_hints.get(key))
             for key, val in config.items()
         }
 
         return constructor(*args, **kwargs)
 
-    def _build(self, config: tp.Any, annotation: tp.Type = None) -> tp.Any:
+    def _build(
+        self,
+        config: tp.Any,
+        param_name: str,
+        annotation: tp.Type = None,
+    ) -> tp.Any:
+        config = copy.deepcopy(config)
+
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
@@ -76,66 +94,81 @@ class ColtBuilder:
 
         if origin in (tp.List, list):
             value_cls = args[0] if args else None
-            return list(self._build(x, value_cls) for x in config)
+            return list(
+                self._build(x, param_name + f".{i}", value_cls)
+                for i, x in enumerate(config))
 
         if origin in (tp.Set, set):
             value_cls = args[0] if args else None
-            return set(self._build(x, value_cls) for x in config)
+            return set(
+                self._build(x, param_name + f".{i}", value_cls)
+                for i, x in enumerate(config))
 
         if origin in (tp.Tuple, tuple):
             if not args:
-                return tuple(self._build(x) for x in config)
+                return tuple(
+                    self._build(x, param_name + f".{i}")
+                    for i, x in enumerate(config))
 
             if len(args) == 2 and args[1] == Ellipsis:
-                return tuple(self._build(x, args[0]) for x in config)
+                return tuple(
+                    self._build(x, param_name + f".{i}", args[0])
+                    for i, x in enumerate(config))
 
             return tuple(
-                self._build(value_config, value_cls)
-                for value_config, value_cls in zip(config, args))
+                self._build(value_config, param_name + f".{i}", value_cls)
+                for i, (value_config,
+                        value_cls) in enumerate(zip(config, args)))
 
         if origin in (tp.Dict, dict):
             key_cls = args[0] if args else None
             value_cls = args[1] if args else None
             return {
-                self._build(key_config, key_cls):
-                self._build(value_config, value_cls)
-                for key_config, value_config in config.items()
+                self._build(key_config, param_name + f".[key:{i}]", key_cls):
+                self._build(value_config, param_name + f".{key_config}",
+                            value_cls)
+                for i, (key_config, value_config) in enumerate(config.items())
             }
 
         if origin == tp.Union:
             if not args:
-                return self._build(config)
-
-            value_config = copy.deepcopy(config)
+                return self._build(config, param_name)
 
             for value_cls in args:
                 try:
-                    return self._build(value_config, value_cls)
+                    return self._build(config, param_name, value_cls)
                 except (ValueError, TypeError, ConfigurationError,
                         AttributeError):
-                    value_config = copy.deepcopy(config)
                     continue
 
             raise ConfigurationError(
-                f"Failed to construct argument with type {annotation}")
+                f"Failed to construct argument {param_name} with type {annotation}"
+            )
 
         if isinstance(config, (list, set, tuple)):
             T = type(config)
             value_cls = args[0] if args else None
-            return T(self._build(x, value_cls) for x in config)
+            return T(
+                self._build(x, param_name + f".{i}", value_cls)
+                for i, x in enumerate(config))
 
         if not isinstance(config, dict):
             if annotation is not None and not isinstance(config, annotation):
-                raise ConfigurationError(f"type mismatch: {annotation}")
+                raise UserWarning(
+                    f"type mismatch at {param_name}: {annotation}")
             return config
 
         if annotation is None and self._typekey not in config:
-            return {key: self._build(val) for key, val in config.items()}
+            return {
+                key: self._build(val, param_name + f".{key}")
+                for key, val in config.items()
+            }
 
         if self._typekey in config:
             class_name = config.pop(self._typekey)
-            constructor = self._get_constructor_by_name(class_name, annotation)
+            constructor = self._get_constructor_by_name(
+                class_name, param_name, annotation)
         else:
             constructor = origin or annotation  # type: ignore
 
-        return self._construct_with_args(constructor, config)
+        return self._construct_with_args(constructor, config, param_name)
