@@ -7,8 +7,6 @@ PYLINTRC         := $(PWD)/.pylintrc
 MYPYINI          := $(PWD)/mypy.ini
 MODULE           := colt
 
-.PHONY: all
-all: clean mypy lint test
 
 .PHONY: lint
 lint:
