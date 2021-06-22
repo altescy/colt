@@ -1,6 +1,7 @@
 # pylint: disable=too-many-return-statements,too-many-branches
 import copy
 import io
+import pprint
 import traceback
 from typing import (
     Any,
@@ -88,7 +89,10 @@ class ColtBuilder:
             for key, val in config.items()
         }
 
-        return constructor(*args, **kwargs)
+        try:
+            return constructor(*args, **kwargs)
+        except Exception as e:
+            raise ConfigurationError(f"Failed to construct at {param_name}") from e
 
     def _build(
         self,
@@ -166,12 +170,13 @@ class ColtBuilder:
                     trial_exceptions.append((value_cls, e, tb))
                     continue
 
+            trial_messages = [
+                f"-----  Trial exception ({cls}):\n{repr(e)}\n{tb}"
+                for cls, e, tb in trial_exceptions
+            ]
             raise ConfigurationError(
                 f"Failed to construct argument {param_name} with type {annotation}\n\n"
-                + "\n".join(
-                    f"Trial exception ({cls}):\n{repr(e)}\n{tb}"
-                    for cls, e, tb in trial_exceptions
-                )
+                + "\n".join(msg for msg in trial_messages)
             )
 
         if isinstance(config, (list, set, tuple)):
