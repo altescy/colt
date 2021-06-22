@@ -1,4 +1,4 @@
-import typing as tp
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import colt
 
@@ -11,54 +11,54 @@ class Foo:
 
 @colt.register("bar")
 class Bar:
-    def __init__(self, foos: tp.List[Foo]) -> None:
+    def __init__(self, foos: List[Foo]) -> None:
         self.foos = foos
 
 
 @colt.register("baz")
 class Baz(Foo):
-    def __init__(self, x: str, y: int = None) -> None:
+    def __init__(self, x: str, y: Optional[int] = None) -> None:
         super().__init__(x)
         self.y = y
 
 
 @colt.register("qux")
 class Qux:
-    def __init__(self, x: tp.Set[int]) -> None:
+    def __init__(self, x: Set[int]) -> None:
         self.x = x
 
 
 @colt.register("corge")
 class Corge:
-    def __init__(self, x) -> None:
+    def __init__(self, x) -> None:  # type: ignore
         self.x = x
 
 
 @colt.register("grault")
 class Grault:
-    def __init__(self, x: tp.Tuple[Foo, Qux]) -> None:
+    def __init__(self, x: Tuple[Foo, Qux]) -> None:
         self.x = x
 
 
 @colt.register("garply")
 class Garply:
-    def __init__(self, x: tp.Dict[str, Foo]) -> None:
+    def __init__(self, x: Dict[str, Foo]) -> None:
         self.x = x
 
 
 @colt.register("waldo")
 class Waldo:
-    def __init__(self, x: tp.Union[str, Foo]) -> None:
+    def __init__(self, x: Union[str, Foo]) -> None:
         self.x = x
 
 
 @colt.register("fred")
 class Fred:
-    def __init__(self, x: tp.Any) -> None:
+    def __init__(self, x: Any) -> None:
         self.x = x
 
 
-def test_colt_with_type():
+def test_colt_with_type() -> None:
     config = {
         "bar": {
             "@type": "bar",
@@ -82,7 +82,7 @@ def test_colt_with_type():
     assert isinstance(obj["foos"][0], Foo)
 
 
-def test_colt_with_less_type():
+def test_colt_with_less_type() -> None:
     config = {
         "@type": "bar",
         "foos": [
@@ -98,7 +98,7 @@ def test_colt_with_less_type():
     assert isinstance(obj.foos[0], Foo)
 
 
-def test_colt_with_optional():
+def test_colt_with_optional() -> None:
     config = {
         "@type": "baz",
         "x": "hello",
@@ -113,7 +113,7 @@ def test_colt_with_optional():
     config = {
         "@type": "baz",
         "x": "hello",
-        "y": 123,
+        "y": 123,  # type: ignore
     }
 
     obj = colt.build(config)
@@ -121,7 +121,7 @@ def test_colt_with_optional():
     assert obj.y == 123
 
 
-def test_colt_with_subclass():
+def test_colt_with_subclass() -> None:
     config = {
         "@type": "bar",
         "foos": [
@@ -137,7 +137,7 @@ def test_colt_with_subclass():
     assert isinstance(obj.foos[1], Baz)
 
 
-def test_type_conversion():
+def test_type_conversion() -> None:
     config = {
         "@type": "qux",
         "x": [1, 2, 3, 3],
@@ -150,7 +150,7 @@ def test_type_conversion():
     assert len(obj.x) == 3
 
 
-def test_colt_without_annotation():
+def test_colt_without_annotation() -> None:
     config = {
         "@type": "corge",
         "x": ["a", "b"],
@@ -180,7 +180,7 @@ def test_colt_tuple():
     assert isinstance(obj.x[1], Qux)
 
 
-def test_colt_dict():
+def test_colt_dict() -> None:
     config = {
         "@type": "garply",
         "x": {
@@ -199,7 +199,7 @@ def test_colt_dict():
     assert obj.x["b"].x == "world"
 
 
-def test_colt_union():
+def test_colt_union() -> None:
     config = {
         "@type": "waldo",
         "x": "hello",
@@ -213,7 +213,7 @@ def test_colt_union():
 
     config = {
         "@type": "waldo",
-        "x": {"x": "hello"},
+        "x": {"x": "hello"},  # type: ignore
     }
 
     obj = colt.build(config)
@@ -223,7 +223,7 @@ def test_colt_union():
     assert obj.x.x == "hello"
 
 
-def test_colt_any():
+def test_colt_any() -> None:
     config = {"@type": "fred", "x": {"@type": "foo", "x": "hello"}}
 
     obj = colt.build(config)
@@ -231,7 +231,7 @@ def test_colt_any():
     assert isinstance(obj.x, Foo)
 
 
-def test_build_with_type():
+def test_build_with_type() -> None:
     config = {"x": "abc"}
 
     obj = colt.build(config, Foo)
