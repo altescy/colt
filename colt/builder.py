@@ -39,7 +39,7 @@ class ColtBuilder:
     def _remove_optional(annotation: type) -> type:
         origin = getattr(annotation, "__origin__", None)
         args = getattr(annotation, "__args__", ())
-        if origin == Union and len(args) == 2 and issubclass(args[1], type(None)):
+        if origin == Union and len(args) == 2 and args[1] == type(None):  # noqa: E721
             return cast(type, args[0])
         return annotation
 
@@ -153,20 +153,24 @@ class ColtBuilder:
             if not args:
                 return self._build(config, param_name)
 
+            trial_exceptions: List[Exception] = []
             for value_cls in args:
                 try:
                     return self._build(config, param_name, value_cls)
-                except (ValueError, TypeError, ConfigurationError, AttributeError):
+                except (ValueError, TypeError, ConfigurationError, AttributeError) as e:
+                    trial_exceptions.append(e)
                     continue
 
             raise ConfigurationError(
-                f"Failed to construct argument {param_name} with type {annotation}"
+                f"Failed to construct argument {param_name} with type {annotation}\n"
+                + "Trial exceptions:\n"
+                + "\n".join("  " + repr(e) for e in trial_exceptions)
             )
 
         if isinstance(config, (list, set, tuple)):
-            T = type(config)
+            cls = type(config)
             value_cls = args[0] if args else None
-            return T(
+            return cls(
                 self._build(x, param_name + f".{i}", value_cls)
                 for i, x in enumerate(config)
             )
