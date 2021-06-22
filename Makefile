@@ -1,20 +1,17 @@
 PWD              := $(shell pwd)
 PYTHON           := poetry run python
-PYLINT           := poetry run pylint
-MYPY             := poetry run mypy
 PYTEST           := poetry run pytest
-PYLINTRC         := $(PWD)/.pylintrc
-MYPYINI          := $(PWD)/mypy.ini
+PYSEN            := poetry run pysen
 MODULE           := colt
 
 
 .PHONY: lint
 lint:
-	PYTHONPATH=$(PWD) $(PYLINT) --rcfile=$(PYLINTRC) $(MODULE)
+	$(PYSEN) run lint
 
-.PHONY: mypy
-mypy:
-	PYTHONPATH=$(PWD) $(MYPY)  --config-file $(MYPYINI) $(MODULE)
+.PHONY: format
+format:
+	$(PYSEN) run format
 
 .PHONY: test
 test:

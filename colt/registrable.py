@@ -1,30 +1,31 @@
-import typing as tp
 import importlib
 from collections import defaultdict
+from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar, Union, cast
 
 from colt.error import ConfigurationError
 
-T = tp.TypeVar("T", bound="Registrable")
-Registry = tp.Dict[tp.Type, tp.Dict[str, tp.Tuple[tp.Type, tp.Optional[str]]]]
+T = TypeVar("T")
+Registry = Dict[Type["Registrable"], Dict[str, Tuple[Type[Any], Optional[str]]]]
 
 
 class Registrable:
     _registry: Registry = defaultdict(dict)
 
     @classmethod
-    def register(cls: tp.Type[T],
-                 name: str,
-                 constructor: str = None,
-                 exist_ok: bool = False):
+    def register(
+        cls,
+        name: str,
+        constructor: Optional[str] = None,
+        exist_ok: bool = False,
+    ) -> Callable[[Type[T]], Type[T]]:
         registry = Registrable._registry[cls]
 
-        def decorator(subclass: tp.Type[T]):
+        def decorator(subclass: Type[T]) -> Type[T]:
             if not exist_ok and name in registry:
                 raise ValueError(f"type name conflict: {name}")
 
             if constructor and not hasattr(subclass, constructor):
-                raise ValueError(
-                    f"constructor {constructor} not found in {subclass}")
+                raise ValueError(f"constructor {constructor} not found in {subclass}")
 
             registry[name] = (subclass, constructor)
 
@@ -33,18 +34,16 @@ class Registrable:
         return decorator
 
     @classmethod
-    def by_name(cls: tp.Type[T], name: str) -> tp.Callable[..., T]:
+    def by_name(cls, name: str) -> Union[Type[T], Callable[..., T]]:
         subclass, constructor = cls.resolve_class_name(name)
 
         if not constructor:
             return subclass
 
-        return tp.cast(tp.Callable[..., T], getattr(subclass, constructor))
+        return cast(Callable[..., T], getattr(subclass, constructor))
 
     @classmethod
-    def resolve_class_name(
-            cls: tp.Type[T],
-            name: str) -> tp.Tuple[tp.Type[T], tp.Optional[str]]:
+    def resolve_class_name(cls, name: str) -> Tuple[Type[Any], Optional[str]]:
         registry = Registrable._registry[cls]
 
         if name in registry:
@@ -58,7 +57,8 @@ class Registrable:
                 module = importlib.import_module(submodule)
             except ModuleNotFoundError as e:
                 raise ConfigurationError(
-                    f"module {submodule} not found ({name})") from e
+                    f"module {submodule} not found ({name})"
+                ) from e
 
             try:
                 subclass = getattr(module, class_name)
@@ -70,4 +70,5 @@ class Registrable:
                 ) from e
 
         raise ConfigurationError(
-            f"{name} is not a registered name for {cls.__name__}. ")
+            f"{name} is not a registered name for {cls.__name__}. "
+        )

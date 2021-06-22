@@ -61,29 +61,16 @@ class Fred:
 def test_colt_with_type():
     config = {
         "bar": {
-            "@type":
-            "bar",
+            "@type": "bar",
             "foos": [
-                {
-                    "@type": "foo",
-                    "x": "hello"
-                },
-                {
-                    "@type": "foo",
-                    "x": "world"
-                },
-            ]
+                {"@type": "foo", "x": "hello"},
+                {"@type": "foo", "x": "world"},
+            ],
         },
         "foos": [
-            {
-                "@type": "foo",
-                "x": "hoge"
-            },
-            {
-                "@type": "foo",
-                "x": "fuga"
-            },
-        ]
+            {"@type": "foo", "x": "hoge"},
+            {"@type": "foo", "x": "fuga"},
+        ],
     }
 
     obj = colt.build(config)
@@ -99,13 +86,9 @@ def test_colt_with_less_type():
     config = {
         "@type": "bar",
         "foos": [
-            {
-                "x": "hello"
-            },
-            {
-                "x": "world"
-            },
-        ]
+            {"x": "hello"},
+            {"x": "world"},
+        ],
     }
 
     obj = colt.build(config)
@@ -142,15 +125,9 @@ def test_colt_with_subclass():
     config = {
         "@type": "bar",
         "foos": [
-            {
-                "x": "hello"
-            },
-            {
-                "@type": "baz",
-                "x": "world",
-                "y": 123
-            },
-        ]
+            {"x": "hello"},
+            {"@type": "baz", "x": "world", "y": 123},
+        ],
     }
 
     obj = colt.build(config)
@@ -190,13 +167,9 @@ def test_colt_tuple():
     config = {
         "@type": "grault",
         "x": [
-            {
-                "x": "hello"
-            },
-            {
-                "x": [1, 2, 3]
-            },
-        ]
+            {"x": "hello"},
+            {"x": [1, 2, 3]},
+        ],
     }
 
     obj = colt.build(config)
@@ -211,13 +184,9 @@ def test_colt_dict():
     config = {
         "@type": "garply",
         "x": {
-            "a": {
-                "x": "hello"
-            },
-            "b": {
-                "x": "world"
-            },
-        }
+            "a": {"x": "hello"},
+            "b": {"x": "world"},
+        },
     }
 
     obj = colt.build(config)
@@ -244,9 +213,7 @@ def test_colt_union():
 
     config = {
         "@type": "waldo",
-        "x": {
-            "x": "hello"
-        },
+        "x": {"x": "hello"},
     }
 
     obj = colt.build(config)

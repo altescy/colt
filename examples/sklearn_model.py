@@ -1,22 +1,21 @@
-import colt
-
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
+import colt
+
 if __name__ == "__main__":
     config = {
-        "@type":
-        "sklearn.ensemble.VotingClassifier",
+        "@type": "sklearn.ensemble.VotingClassifier",
         "estimators": [
-            ("rfc", {
-                "@type": "sklearn.ensemble.RandomForestClassifier",
-                "n_estimators": 10
-            }),
-            ("svc", {
-                "@type": "sklearn.svm.SVC",
-                "gamma": "scale"
-            }),
-        ]
+            (
+                "rfc",
+                {
+                    "@type": "sklearn.ensemble.RandomForestClassifier",
+                    "n_estimators": 10,
+                },
+            ),
+            ("svc", {"@type": "sklearn.svm.SVC", "gamma": "scale"}),
+        ],
     }
 
     X, y = load_iris(return_X_y=True)

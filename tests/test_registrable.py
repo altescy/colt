@@ -27,15 +27,7 @@ class MyClass:
 
 
 def test_registrable():
-    config = {
-        "@type": "my_class",
-        "foo": {
-            "@type": "baz"
-        },
-        "bar": {
-            "@type": "baz"
-        }
-    }
+    config = {"@type": "my_class", "foo": {"@type": "baz"}, "bar": {"@type": "baz"}}
 
     obj = colt.build(config)
 

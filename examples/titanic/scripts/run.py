@@ -1,9 +1,9 @@
 import argparse
 
-import colt
-
 from titanic.utils.jsonnet import load_jsonnet
 from titanic.worker import Worker
+
+import colt
 
 
 def main():

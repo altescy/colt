@@ -1,11 +1,11 @@
-import typing as tp
 import re
+import typing as tp
 
-import colt
 import numpy as np
 import pdpipe as pdp
-
 from titanic.pdp.stages import PdpStage
+
+import colt
 
 
 @PdpStage.register("add_family_size")
@@ -54,7 +54,7 @@ class AddNameTitle(pdp.ApplyToRows):
         "Mrs": "Mrs",
         "Miss": "Miss",
         "Master": "Master",
-        "Lady": "Lady"
+        "Lady": "Lady",
     }
 
     def __init__(self, name: str = None, titles: tp.Dict[str, str] = None):

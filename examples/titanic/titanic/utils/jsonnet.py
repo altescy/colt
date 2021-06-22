@@ -1,7 +1,6 @@
-import typing as tp
-
 import json
 import os
+import typing as tp
 
 from _jsonnet import evaluate_file
 
@@ -11,10 +10,7 @@ def _is_encodable(value: str) -> bool:
 
 
 def _environment_variables() -> tp.Dict[str, str]:
-    return {
-        key: value
-        for key, value in os.environ.items() if _is_encodable(value)
-    }
+    return {key: value for key, value in os.environ.items() if _is_encodable(value)}
 
 
 def load_jsonnet(path: str) -> tp.Dict[str, tp.Any]:

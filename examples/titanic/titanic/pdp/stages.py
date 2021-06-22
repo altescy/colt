@@ -1,11 +1,11 @@
-import typing as tp
 import inspect
+import typing as tp
 
-import colt
 import pandas as pd
 import pdpipe as pdp
-
 from titanic.utils.camsnake import camel_to_snake
+
+import colt
 
 
 class PdpStage(pdp.PdPipelineStage, colt.Registrable):
