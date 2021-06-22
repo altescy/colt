@@ -22,7 +22,6 @@ from colt.error import ConfigurationError
 from colt.registrable import Registrable
 
 T = TypeVar("T")
-S = TypeVar("S")
 
 
 class ColtBuilder:
