@@ -1,5 +1,7 @@
 # pylint: disable=too-many-return-statements,too-many-branches
 import copy
+import io
+import traceback
 from typing import (
     Any,
     Callable,
@@ -20,6 +22,7 @@ from colt.error import ConfigurationError
 from colt.registrable import Registrable
 
 T = TypeVar("T")
+S = TypeVar("S")
 
 
 class ColtBuilder:
@@ -32,7 +35,7 @@ class ColtBuilder:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
 
-    def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Any:
+    def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Union[T, Any]:
         return self._build(config, "", cls)
 
     @staticmethod
@@ -62,14 +65,14 @@ class ColtBuilder:
         constructor: Callable[..., T],
         config: Dict[str, Any],
         param_name: str,
-    ) -> Any:
+    ) -> T:
         if not config:
             return constructor()
 
         args_config = config.pop(self._argskey, [])
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError(f"args must be a list or tuple: {param_name}")
-        args = [
+        args: List[Any] = [
             self._build(val, param_name + f".{self._argskey}.{i}")
             for i, val in enumerate(args_config)
         ]
@@ -81,7 +84,7 @@ class ColtBuilder:
         else:
             type_hints = get_type_hints(constructor)
 
-        kwargs = {
+        kwargs: Dict[str, Any] = {
             key: self._build(val, param_name + f".{key}", type_hints.get(key))
             for key, val in config.items()
         }
@@ -153,18 +156,23 @@ class ColtBuilder:
             if not args:
                 return self._build(config, param_name)
 
-            trial_exceptions: List[Exception] = []
+            trial_exceptions: List[Tuple[Any, Exception, str]] = []
             for value_cls in args:
                 try:
                     return self._build(config, param_name, value_cls)
                 except (ValueError, TypeError, ConfigurationError, AttributeError) as e:
-                    trial_exceptions.append(e)
+                    with io.StringIO() as fp:
+                        traceback.print_exc(file=fp)
+                        tb = fp.getvalue()
+                    trial_exceptions.append((value_cls, e, tb))
                     continue
 
             raise ConfigurationError(
-                f"Failed to construct argument {param_name} with type {annotation}\n"
-                + "Trial exceptions:\n"
-                + "\n".join("  " + repr(e) for e in trial_exceptions)
+                f"Failed to construct argument {param_name} with type {annotation}\n\n"
+                + "\n".join(
+                    f"Trial exception ({cls}):\n{repr(e)}\n{tb}"
+                    for cls, e, tb in trial_exceptions
+                )
             )
 
         if isinstance(config, (list, set, tuple)):
