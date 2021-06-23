@@ -9,7 +9,7 @@ colt
 ## Quick Links
 
 - [Installation](#Installation)
-- [Basic Examples](Examples)
+- [Basic Examples](#Examples)
 - [kaggle Titanic Example](https://github.com/altescy/colt/tree/master/examples/titanic)
 
 ## Introduction
