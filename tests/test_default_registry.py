@@ -2,13 +2,7 @@ import colt
 
 
 def test_colt_builtintypes():
-    config = [{
-        "@type": "tuple",
-        "*": [[1, 2, 3]]
-    }, {
-        "@type": "range",
-        "*": [0, 10, 2]
-    }]
+    config = [{"@type": "tuple", "*": [[1, 2, 3]]}, {"@type": "range", "*": [0, 10, 2]}]
 
     obj = colt.build(config)
 

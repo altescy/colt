@@ -1,7 +1,6 @@
-import typing as tp
-
 import logging
 import time
+import typing as tp
 from datetime import timedelta
 
 
@@ -13,8 +12,11 @@ class LogFormatter(logging.Formatter):
     def format(self, record):
         elapsed_seconds = round(record.created - self.start_time)
 
-        prefix = "%s - %s - %s" % (record.levelname, time.strftime("%x %X"),
-                                   timedelta(seconds=elapsed_seconds))
+        prefix = "%s - %s - %s" % (
+            record.levelname,
+            time.strftime("%x %X"),
+            timedelta(seconds=elapsed_seconds),
+        )
         message = record.getMessage()
         message = message.replace("\n", "\n" + " " * (len(prefix) + 3))
         return "%s - %s" % (prefix, message) if message else ""

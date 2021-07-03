@@ -1,24 +1,23 @@
-import typing as tp
 import os
 import random
+import typing as tp
 
-import colt
 import numpy as np
 import pandas as pd
 import pdpipe as pdp
 from sklearn.base import BaseEstimator
 from sklearn.model_selection._search import BaseSearchCV
-
 from titanic.logger import create_logger
 from titanic.pdp.stages import PdpStage
 from titanic.validator import SklearnValidator
+
+import colt
 
 logger = create_logger(__name__)
 
 
 class Worker(colt.Registrable):
-    def __init__(self, train_path: str, test_path: str,
-                 random_seed: int) -> None:
+    def __init__(self, train_path: str, test_path: str, random_seed: int) -> None:
         self._train_path = train_path
         self._test_path = test_path
         self._random_seed = random_seed
@@ -56,9 +55,15 @@ class Worker(colt.Registrable):
 
 @Worker.register("sklearn_worker")
 class SklearnWorker(Worker):
-    def __init__(self, pdpipeline: PdpStage, model: BaseEstimator,
-                 validator: SklearnValidator, train_path: str, test_path: str,
-                 random_seed: int) -> None:
+    def __init__(
+        self,
+        pdpipeline: PdpStage,
+        model: BaseEstimator,
+        validator: SklearnValidator,
+        train_path: str,
+        test_path: str,
+        random_seed: int,
+    ) -> None:
         super().__init__(train_path, test_path, random_seed)
 
         self.pdpipeline = pdpipeline
@@ -87,10 +92,8 @@ class SklearnWorker(Worker):
 
             grid.fit(X_train, y_train)
 
-            logger.info("[ Parameter Search ] best params: %s",
-                        repr(grid.best_params_))
-            logger.info("[ Parameter Search ] best score: %s",
-                        repr(grid.best_score_))
+            logger.info("[ Parameter Search ] best params: %s", repr(grid.best_params_))
+            logger.info("[ Parameter Search ] best score: %s", repr(grid.best_score_))
 
             model = grid.best_estimator_
 
