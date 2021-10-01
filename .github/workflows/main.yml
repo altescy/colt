@@ -1,10 +1,18 @@
 name: build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - '*'
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v1
 
@@ -35,6 +43,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build and publish to pypi
-      uses: JRubics/poetry-publish@v1
+      uses: JRubics/poetry-publish@v1.8
       with:
         pypi_token: ${{ secrets.PYPI_TOKEN }}
