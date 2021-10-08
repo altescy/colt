@@ -6,6 +6,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Final,
     List,
     Optional,
     Set,
@@ -25,11 +26,13 @@ T = TypeVar("T")
 
 
 class ColtBuilder:
-    _DEFAULT_TYPEKEY = "@type"
-    _DEFAULT_ARGSKEY = "*"
+    _DEFAULT_TYPEKEY: Final = "@type"
+    _DEFAULT_ARGSKEY: Final = "*"
 
     def __init__(
-        self, typekey: Optional[str] = None, argskey: Optional[str] = None
+        self,
+        typekey: Optional[str] = None,
+        argskey: Optional[str] = None,
     ) -> None:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
@@ -47,7 +50,9 @@ class ColtBuilder:
 
     @staticmethod
     def _get_constructor_by_name(
-        name: str, param_name: str, annotation: Optional[Type[T]] = None
+        name: str,
+        param_name: str,
+        annotation: Optional[Type[T]] = None,
     ) -> Union[Type[T], Callable[..., T]]:
         if annotation and issubclass(annotation, Registrable):
             constructor = cast(Type[T], annotation.by_name(name))

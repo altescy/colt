@@ -10,7 +10,9 @@ T = TypeVar("T")
 
 
 def register(
-    name: str, constructor: Optional[str] = None, exist_ok: bool = False
+    name: str,
+    constructor: Optional[str] = None,
+    exist_ok: bool = False,
 ) -> Callable[[Type[T]], Type[T]]:
     def decorator(cls: Type[T]) -> Type[T]:
         DefaultRegistry.register(name, constructor, exist_ok)(cls)

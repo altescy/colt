@@ -1,6 +1,17 @@
 import importlib
 from collections import defaultdict
-from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from colt.error import ConfigurationError
 
@@ -9,7 +20,7 @@ Registry = Dict[Type["Registrable"], Dict[str, Tuple[Type[Any], Optional[str]]]]
 
 
 class Registrable:
-    _registry: Registry = defaultdict(dict)
+    _registry: ClassVar[Registry] = defaultdict(dict)
 
     @classmethod
     def register(
