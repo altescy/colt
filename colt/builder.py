@@ -98,7 +98,9 @@ class ColtBuilder:
             return constructor(*args, **kwargs)
         except Exception as e:
             if raise_configuration_error:
-                raise ConfigurationError(f"Failed to construct at {param_name}") from e
+                raise ConfigurationError(
+                    f"Failed to construct argument {param_name} with constructor {constructor}"
+                ) from e
             else:
                 raise
 
