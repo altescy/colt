@@ -69,13 +69,14 @@ class ColtBuilder:
         constructor: Callable[..., T],
         config: Dict[str, Any],
         param_name: str,
+        raise_configuration_error: bool = True,
     ) -> T:
         if not config:
             return constructor()
 
         args_config = config.pop(self._argskey, [])
         if not isinstance(args_config, (list, tuple)):
-            raise ConfigurationError(f"args must be a list or tuple: {param_name}")
+            raise ConfigurationError(f"Arguments must be a list or tuple: {param_name}")
         args: List[Any] = [
             self._build(val, param_name + f".{self._argskey}.{i}")
             for i, val in enumerate(args_config)
@@ -96,15 +97,20 @@ class ColtBuilder:
         try:
             return constructor(*args, **kwargs)
         except Exception as e:
-            raise ConfigurationError(f"Failed to construct at {param_name}") from e
+            if raise_configuration_error:
+                raise ConfigurationError(f"Failed to construct at {param_name}") from e
+            else:
+                raise
 
     def _build(
         self,
         config: Any,
         param_name: str,
         annotation: Optional[Type[T]] = None,
+        raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
         config = copy.deepcopy(config)
+        param_name = param_name.strip(".")
 
         if annotation is not None:
             annotation = self._remove_optional(annotation)
@@ -166,7 +172,9 @@ class ColtBuilder:
             trial_exceptions: List[Tuple[Any, Exception, str]] = []
             for value_cls in args:
                 try:
-                    return self._build(config, param_name, value_cls)
+                    return self._build(
+                        config, param_name, value_cls, raise_configuration_error=False
+                    )
                 except (ValueError, TypeError, ConfigurationError, AttributeError) as e:
                     with io.StringIO() as fp:
                         traceback.print_exc(file=fp)
@@ -175,12 +183,14 @@ class ColtBuilder:
                     continue
 
             trial_messages = [
-                f"-----  Trial exception ({cls}):\n{repr(e)}\n{tb}"
+                f"-----  Trying to construct argument {param_name} with type {cls}:"
+                f"\n{repr(e)}\n{tb}"
                 for cls, e, tb in trial_exceptions
             ]
             raise ConfigurationError(
-                f"Failed to construct argument {param_name} with type {annotation}\n\n"
+                "\n\n"
                 + "\n".join(msg for msg in trial_messages)
+                + f"\nFailed to construct argument {param_name} with type {annotation}."
             )
 
         if isinstance(config, (list, set, tuple)):
@@ -194,8 +204,8 @@ class ColtBuilder:
         if not isinstance(config, dict):
             if annotation is not None and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"type mismatch at {param_name}, expected: "
-                    f"{annotation}, actual type: {type(config)}"
+                    f"Type mismatch at {param_name}, expected type is "
+                    f"{annotation}, but actual type is {type(config)}"
                 )
             return config
 
@@ -213,4 +223,6 @@ class ColtBuilder:
         else:
             constructor = origin or annotation  # type: ignore
 
-        return self._construct_with_args(constructor, config, param_name)
+        return self._construct_with_args(
+            constructor, config, param_name, raise_configuration_error
+        )
