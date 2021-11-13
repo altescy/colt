@@ -23,6 +23,7 @@ from typing import (
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
 from colt.registrable import Registrable
+from colt.utils import indent
 
 T = TypeVar("T")
 
@@ -62,9 +63,14 @@ class ColtBuilder:
             constructor = cast(Type[T], DefaultRegistry.by_name(name))
 
         if constructor is None:
-            raise ConfigurationError(f"type not found error at `{param_name}`: {name}")
+            raise ConfigurationError(f"[{param_name}] type not found error: {name}")
 
         return constructor
+
+    @staticmethod
+    def _catname(parent: str, *keys: Union[int, str]) -> str:
+        key = ".".join(str(x) for x in keys)
+        return f"{parent}.{key}" if parent else key
 
     def _construct_with_args(
         self,
@@ -78,9 +84,11 @@ class ColtBuilder:
 
         args_config = config.pop(self._argskey, [])
         if not isinstance(args_config, (list, tuple)):
-            raise ConfigurationError(f"Arguments must be a list or tuple: {param_name}")
+            raise ConfigurationError(
+                f"[{param_name}] Arguments must be a list or tuple."
+            )
         args: List[Any] = [
-            self._build(val, param_name + f".{self._argskey}.{i}")
+            self._build(val, self._catname(param_name, self._argskey, i))
             for i, val in enumerate(args_config)
         ]
 
@@ -92,7 +100,7 @@ class ColtBuilder:
             type_hints = get_type_hints(constructor)
 
         kwargs: Dict[str, Any] = {
-            key: self._build(val, param_name + f".{key}", type_hints.get(key))
+            key: self._build(val, self._catname(param_name, key), type_hints.get(key))
             for key, val in config.items()
         }
 
@@ -101,7 +109,7 @@ class ColtBuilder:
         except Exception as e:
             if raise_configuration_error:
                 raise ConfigurationError(
-                    f"Failed to construct argument {param_name} with constructor {constructor}"
+                    f"[{param_name}] Failed to construct object with constructor {constructor}."
                 ) from e
             else:
                 raise
@@ -114,8 +122,6 @@ class ColtBuilder:
         raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
         config = copy.deepcopy(config)
-        param_name = param_name.strip(".")
-
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
@@ -131,26 +137,27 @@ class ColtBuilder:
         if origin in (List, list):
             value_cls = args[0] if args else None
             return list(
-                self._build(x, param_name + f".{i}", value_cls)
+                self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
         if origin in (Set, set):
             value_cls = args[0] if args else None
             return set(
-                self._build(x, param_name + f".{i}", value_cls)
+                self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
         if origin in (Tuple, tuple):
             if not args:
                 return tuple(
-                    self._build(x, param_name + f".{i}") for i, x in enumerate(config)
+                    self._build(x, self._catname(param_name, i))
+                    for i, x in enumerate(config)
                 )
 
             if len(args) == 2 and args[1] == Ellipsis:
                 return tuple(
-                    self._build(x, param_name + f".{i}", args[0])
+                    self._build(x, self._catname(param_name, i), args[0])
                     for i, x in enumerate(config)
                 )
 
@@ -161,7 +168,7 @@ class ColtBuilder:
                 )
 
             return tuple(
-                self._build(value_config, param_name + f".{i}", value_cls)
+                self._build(value_config, self._catname(param_name, i), value_cls)
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
@@ -170,8 +177,10 @@ class ColtBuilder:
             value_cls = args[1] if args else None
             return {
                 self._build(
-                    key_config, param_name + f".[key:{i}]", key_cls
-                ): self._build(value_config, param_name + f".{key_config}", value_cls)
+                    key_config, self._catname(param_name, f"[key:{i}]"), key_cls
+                ): self._build(
+                    value_config, self._catname(param_name, key_config), value_cls
+                )
                 for i, (key_config, value_config) in enumerate(config.items())
             }
 
@@ -193,35 +202,34 @@ class ColtBuilder:
                     continue
 
             trial_messages = [
-                f"-----  Trying to construct argument {param_name} with type {cls}:"
-                f"\n{repr(e)}\n{tb}"
+                f"[{param_name}] Trying to construct {annotation} with type {cls}:\n{e}\n{tb}"
                 for cls, e, tb in trial_exceptions
             ]
             raise ConfigurationError(
                 "\n\n"
-                + "\n".join(msg for msg in trial_messages)
-                + f"\nFailed to construct argument {param_name} with type {annotation}."
+                + "\n".join(indent(msg) for msg in trial_messages)
+                + f"\n[{param_name}] Failed to construct object with type {annotation}"
             )
 
         if isinstance(config, (list, set, tuple)):
             cls = type(config)
             value_cls = args[0] if args else None
             return cls(
-                self._build(x, param_name + f".{i}", value_cls)
+                self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
         if not isinstance(config, dict):
             if annotation is not None and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"Type mismatch at {param_name}, expected type is "
-                    f"{annotation}, but actual type is {type(config)}"
+                    f"[{param_name}] Type mismatch, expected type is "
+                    f"{annotation}, but actual type is {type(config)}."
                 )
             return config
 
         if annotation is None and self._typekey not in config:
             return {
-                key: self._build(val, param_name + f".{key}")
+                key: self._build(val, self._catname(param_name, key))
                 for key, val in config.items()
             }
 

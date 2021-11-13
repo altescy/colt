@@ -33,3 +33,8 @@ def import_modules(module_names: tp.List[str]) -> None:
     """
     for module_name in module_names:
         import_submodules(module_name)
+
+
+def indent(s: str, level: int = 1) -> str:
+    tabs = "\t" * level
+    return tabs + s.replace("\n", f"\n{tabs}")
