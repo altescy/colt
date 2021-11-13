@@ -62,7 +62,7 @@ class ColtBuilder:
             constructor = cast(Type[T], DefaultRegistry.by_name(name))
 
         if constructor is None:
-            raise ConfigurationError(f"type not found error at `{param_name}`: {name}")
+            raise ConfigurationError(f"[{param_name}] type not found error: {name}")
 
         return constructor
 
@@ -78,7 +78,9 @@ class ColtBuilder:
 
         args_config = config.pop(self._argskey, [])
         if not isinstance(args_config, (list, tuple)):
-            raise ConfigurationError(f"Arguments must be a list or tuple: {param_name}")
+            raise ConfigurationError(
+                f"[{param_name}] Arguments must be a list or tuple."
+            )
         args: List[Any] = [
             self._build(val, param_name + f".{self._argskey}.{i}")
             for i, val in enumerate(args_config)
@@ -101,7 +103,7 @@ class ColtBuilder:
         except Exception as e:
             if raise_configuration_error:
                 raise ConfigurationError(
-                    f"Failed to construct argument {param_name} with constructor {constructor}"
+                    f"[{param_name}] Failed to construct object with constructor {constructor}."
                 ) from e
             else:
                 raise
@@ -193,14 +195,13 @@ class ColtBuilder:
                     continue
 
             trial_messages = [
-                f"-----  Trying to construct argument {param_name} with type {cls}:"
-                f"\n{repr(e)}\n{tb}"
+                f"[{param_name}] Trying to construct {annotation} with type {cls}:\n{e}\n{tb}"
                 for cls, e, tb in trial_exceptions
             ]
             raise ConfigurationError(
                 "\n\n"
-                + "\n".join(msg for msg in trial_messages)
-                + f"\nFailed to construct argument {param_name} with type {annotation}."
+                + "\n".join("\t" + msg.replace("\n", "\n\t") for msg in trial_messages)
+                + f"\n[{param_name}] Failed to construct object with type {annotation}"
             )
 
         if isinstance(config, (list, set, tuple)):
@@ -214,8 +215,8 @@ class ColtBuilder:
         if not isinstance(config, dict):
             if annotation is not None and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"Type mismatch at {param_name}, expected type is "
-                    f"{annotation}, but actual type is {type(config)}"
+                    f"[{param_name}] Type mismatch, expected type is "
+                    f"{annotation}, but actual type is {type(config)}."
                 )
             return config
 
