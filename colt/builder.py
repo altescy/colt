@@ -66,6 +66,11 @@ class ColtBuilder:
 
         return constructor
 
+    @staticmethod
+    def _catname(parent: str, *keys: Union[int, str]) -> str:
+        key = ".".join(str(x) for x in keys)
+        return f"{parent}.{key}" if parent else key
+
     def _construct_with_args(
         self,
         constructor: Callable[..., T],
@@ -82,7 +87,7 @@ class ColtBuilder:
                 f"[{param_name}] Arguments must be a list or tuple."
             )
         args: List[Any] = [
-            self._build(val, param_name + f".{self._argskey}.{i}")
+            self._build(val, self._catname(param_name, self._argskey, i))
             for i, val in enumerate(args_config)
         ]
 
@@ -94,7 +99,7 @@ class ColtBuilder:
             type_hints = get_type_hints(constructor)
 
         kwargs: Dict[str, Any] = {
-            key: self._build(val, param_name + f".{key}", type_hints.get(key))
+            key: self._build(val, self._catname(param_name, key), type_hints.get(key))
             for key, val in config.items()
         }
 
@@ -116,8 +121,6 @@ class ColtBuilder:
         raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
         config = copy.deepcopy(config)
-        param_name = param_name.strip(".")
-
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
@@ -133,26 +136,27 @@ class ColtBuilder:
         if origin in (List, list):
             value_cls = args[0] if args else None
             return list(
-                self._build(x, param_name + f".{i}", value_cls)
+                self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
         if origin in (Set, set):
             value_cls = args[0] if args else None
             return set(
-                self._build(x, param_name + f".{i}", value_cls)
+                self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
         if origin in (Tuple, tuple):
             if not args:
                 return tuple(
-                    self._build(x, param_name + f".{i}") for i, x in enumerate(config)
+                    self._build(x, self._catname(param_name, i))
+                    for i, x in enumerate(config)
                 )
 
             if len(args) == 2 and args[1] == Ellipsis:
                 return tuple(
-                    self._build(x, param_name + f".{i}", args[0])
+                    self._build(x, self._catname(param_name, i), args[0])
                     for i, x in enumerate(config)
                 )
 
@@ -163,7 +167,7 @@ class ColtBuilder:
                 )
 
             return tuple(
-                self._build(value_config, param_name + f".{i}", value_cls)
+                self._build(value_config, self._catname(param_name, i), value_cls)
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
@@ -172,8 +176,10 @@ class ColtBuilder:
             value_cls = args[1] if args else None
             return {
                 self._build(
-                    key_config, param_name + f".[key:{i}]", key_cls
-                ): self._build(value_config, param_name + f".{key_config}", value_cls)
+                    key_config, self._catname(param_name, f"[key:{i}]"), key_cls
+                ): self._build(
+                    value_config, self._catname(param_name, key_config), value_cls
+                )
                 for i, (key_config, value_config) in enumerate(config.items())
             }
 
@@ -208,7 +214,7 @@ class ColtBuilder:
             cls = type(config)
             value_cls = args[0] if args else None
             return cls(
-                self._build(x, param_name + f".{i}", value_cls)
+                self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
@@ -222,7 +228,7 @@ class ColtBuilder:
 
         if annotation is None and self._typekey not in config:
             return {
-                key: self._build(val, param_name + f".{key}")
+                key: self._build(val, self._catname(param_name, key))
                 for key, val in config.items()
             }
 
