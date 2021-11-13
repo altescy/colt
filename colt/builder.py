@@ -3,6 +3,7 @@ import copy
 import io
 import traceback
 import typing
+from collections import abc
 from typing import (
     Any,
     Callable,
@@ -151,6 +152,12 @@ class ColtBuilder:
                 return tuple(
                     self._build(x, param_name + f".{i}", args[0])
                     for i, x in enumerate(config)
+                )
+
+            if isinstance(config, abc.Sized) and len(config) != len(args):
+                raise ConfigurationError(
+                    f"[{param_name}] Tuple sizes of the given config and annotation "
+                    f"are mismatched: {config} / {args}"
                 )
 
             return tuple(
