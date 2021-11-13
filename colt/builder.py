@@ -2,6 +2,7 @@
 import copy
 import io
 import traceback
+import typing
 from typing import (
     Any,
     Callable,
@@ -120,8 +121,8 @@ class ColtBuilder:
         if annotation == Any:
             annotation = None
 
-        origin = getattr(annotation, "__origin__", None)
-        args = getattr(annotation, "__args__", [])
+        origin = typing.get_origin(annotation)
+        args = typing.get_args(annotation)
 
         if config is None:
             return config
