@@ -23,6 +23,7 @@ from typing import (
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
 from colt.registrable import Registrable
+from colt.utils import indent
 
 T = TypeVar("T")
 
@@ -206,7 +207,7 @@ class ColtBuilder:
             ]
             raise ConfigurationError(
                 "\n\n"
-                + "\n".join("\t" + msg.replace("\n", "\n\t") for msg in trial_messages)
+                + "\n".join(indent(msg) for msg in trial_messages)
                 + f"\n[{param_name}] Failed to construct object with type {annotation}"
             )
 
