@@ -58,8 +58,8 @@ class ColtBuilder:
 
     @staticmethod
     def _remove_optional(annotation: type) -> type:
-        origin = getattr(annotation, "__origin__", None)
-        args = getattr(annotation, "__args__", ())
+        origin = typing.get_origin(annotation)
+        args = typing.get_args(annotation)
         if origin == Union and len(args) == 2 and args[1] == type(None):  # noqa: E721
             return cast(type, args[0])
         return annotation
