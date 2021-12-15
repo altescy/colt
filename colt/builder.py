@@ -18,6 +18,7 @@ from typing import (
     Union,
     cast,
     get_type_hints,
+    overload,
 )
 
 from colt.default_registry import DefaultRegistry
@@ -39,6 +40,18 @@ class ColtBuilder:
     ) -> None:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
+
+    @overload
+    def __call__(self, config: Any) -> Any:
+        ...
+
+    @overload
+    def __call__(self, config: Any, cls: Type[T]) -> T:
+        ...
+
+    @overload
+    def __call__(self, config: Any, cls: None) -> Any:
+        ...
 
     def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Union[T, Any]:
         return self._build(config, "", cls)
