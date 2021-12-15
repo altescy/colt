@@ -24,6 +24,7 @@ def register(
 def build(
     config: Any,
     cls: Optional[Type[T]] = None,
+    *,
     typekey: Optional[str] = None,
     argskey: Optional[str] = None,
 ) -> Union[T, Any]:
