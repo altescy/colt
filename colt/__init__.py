@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union, overload
 
 from colt.builder import ColtBuilder
 from colt.default_registry import DefaultRegistry
@@ -19,6 +19,28 @@ def register(
         return cls
 
     return decorator
+
+
+@overload
+def build(
+    config: Any,
+    cls: Type[T],
+    *,
+    typekey: Optional[str] = ...,
+    argskey: Optional[str] = ...,
+) -> T:
+    ...
+
+
+@overload
+def build(
+    config: Any,
+    cls: None,
+    *,
+    typekey: Optional[str] = ...,
+    argskey: Optional[str] = ...,
+) -> Any:
+    ...
 
 
 def build(
