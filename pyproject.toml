@@ -24,13 +24,13 @@ python = "^3.8"
 [tool.poetry.dev-dependencies]
 python-language-server = "^0.36.2"
 pytest = "^6.2.2"
-pysen = {version = "^0.9.1", extras = ["lint"]}
+pysen = {version = "^0.10.1", extras = ["lint"]}
 
 [tool.poetry.scripts]
 minato = "minato.__main__:run"
 
 [tool.pysen]
-version = "0.9"
+version = "0.10"
 
 [tool.pysen-cli]
 settings_dir = "."
