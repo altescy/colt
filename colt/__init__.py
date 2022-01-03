@@ -1,10 +1,12 @@
+from importlib.metadata import version
 from typing import Any, Callable, Optional, Type, TypeVar, Union, overload
 
 from colt.builder import ColtBuilder
 from colt.default_registry import DefaultRegistry
 from colt.registrable import Registrable  # noqa: F401
 from colt.utils import import_modules  # noqa: F401
-from colt.version import VERSION as __version__  # noqa: F401
+
+__version__ = version("colt")
 
 T = TypeVar("T")
 
