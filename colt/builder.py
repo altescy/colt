@@ -18,6 +18,7 @@ from typing import (
     Union,
     cast,
     get_type_hints,
+    overload,
 )
 
 from colt.default_registry import DefaultRegistry
@@ -40,13 +41,25 @@ class ColtBuilder:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
 
+    @overload
+    def __call__(self, config: Any) -> Any:
+        ...
+
+    @overload
+    def __call__(self, config: Any, cls: Type[T]) -> T:
+        ...
+
+    @overload
+    def __call__(self, config: Any, cls: None) -> Any:
+        ...
+
     def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Union[T, Any]:
         return self._build(config, "", cls)
 
     @staticmethod
     def _remove_optional(annotation: type) -> type:
-        origin = getattr(annotation, "__origin__", None)
-        args = getattr(annotation, "__args__", ())
+        origin = typing.get_origin(annotation)
+        args = typing.get_args(annotation)
         if origin == Union and len(args) == 2 and args[1] == type(None):  # noqa: E721
             return cast(type, args[0])
         return annotation
