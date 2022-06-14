@@ -163,7 +163,7 @@ def test_colt_without_annotation() -> None:
     assert isinstance(obj.x[0], str)
 
 
-def test_colt_tuple():
+def test_colt_tuple() -> None:
     config = {
         "@type": "grault",
         "x": [

@@ -5,6 +5,9 @@ PYSEN            := poetry run pysen
 MODULE           := colt
 
 
+.PHONY: all
+all: format lint test
+
 .PHONY: lint
 lint:
 	$(PYSEN) run lint

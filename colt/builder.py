@@ -50,7 +50,7 @@ class ColtBuilder:
         ...
 
     @overload
-    def __call__(self, config: Any, cls: None) -> Any:
+    def __call__(self, config: Any, cls: None = ...) -> Any:
         ...
 
     def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Union[T, Any]:

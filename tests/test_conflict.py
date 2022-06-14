@@ -12,14 +12,14 @@ class Bar:
     pass
 
 
-def test_conflict():
+def test_conflict() -> None:
     colt.register("foobar")(Foo)
 
     with pytest.raises(ValueError):
         colt.register("foobar")(Bar)
 
 
-def test_conflict_exist_ok():
+def test_conflict_exist_ok() -> None:
     colt.register("barfoo")(Bar)
     colt.register("barfoo", exist_ok=True)(Foo)
 

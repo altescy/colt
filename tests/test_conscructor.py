@@ -14,7 +14,7 @@ class Plugh:
         return cls(x, y)
 
 
-def test_colt_constructor():
+def test_colt_constructor() -> None:
     config = {"@type": "plugh", "*": ["plugh"], "y": "plugh"}
 
     obj = colt.build(config)
