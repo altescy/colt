@@ -37,7 +37,7 @@ def build(
 @overload
 def build(
     config: Any,
-    cls: None,
+    cls: None = ...,
     *,
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,

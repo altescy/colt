@@ -26,7 +26,7 @@ class MyClass:
         self.bar = bar
 
 
-def test_registrable():
+def test_registrable() -> None:
     config = {"@type": "my_class", "foo": {"@type": "baz"}, "bar": {"@type": "baz"}}
 
     obj = colt.build(config)
