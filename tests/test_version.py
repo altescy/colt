@@ -2,4 +2,4 @@ import colt
 
 
 def test_version() -> None:
-    assert colt.__version__ == "0.8.0"
+    assert colt.__version__ == "0.8.1"
