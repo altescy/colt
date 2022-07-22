@@ -1,6 +1,6 @@
-# pylint: disable=too-many-return-statements,too-many-branches
 import copy
 import io
+import sys
 import traceback
 import typing
 from collections import abc
@@ -20,6 +20,14 @@ from typing import (
     get_type_hints,
     overload,
 )
+
+if sys.version_info >= (3, 10):
+    from types import UnionType
+else:
+
+    class UnionType:
+        ...
+
 
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
@@ -197,7 +205,7 @@ class ColtBuilder:
                 for i, (key_config, value_config) in enumerate(config.items())
             }
 
-        if origin == Union:
+        if origin in (Union, UnionType):
             if not args:
                 return self._build(config, param_name)
 
