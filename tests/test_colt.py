@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
 import colt
 
@@ -238,3 +238,15 @@ def test_build_with_type() -> None:
 
     assert isinstance(obj, Foo)
     assert obj.x == "abc"
+
+
+def test_build_literal() -> None:
+    class Foo:
+        def __init__(self, x: Literal["hello", "world"]) -> None:
+            self.x = x
+
+    config = {"x": "hello"}
+    obj = colt.build(config, Foo)
+
+    assert isinstance(obj, Foo)
+    assert colt.build(config, Foo).x == "hello"

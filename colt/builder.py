@@ -10,6 +10,7 @@ from typing import (
     Dict,
     Final,
     List,
+    Literal,
     Optional,
     Set,
     Tuple,
@@ -204,6 +205,13 @@ class ColtBuilder:
                 )
                 for i, (key_config, value_config) in enumerate(config.items())
             }
+
+        if origin == Literal:
+            if config not in args:
+                raise ConfigurationError(
+                    f"[{param_name}] {config} is not a valid literal value."
+                )
+            return config
 
         if origin in (Union, UnionType):
             if not args:
