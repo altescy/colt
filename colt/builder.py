@@ -32,6 +32,7 @@ else:
 
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
+from colt.lazy import Lazy
 from colt.registrable import Registrable
 from colt.utils import indent
 
@@ -239,6 +240,10 @@ class ColtBuilder:
                 + "\n".join(indent(msg) for msg in trial_messages)
                 + f"\n[{param_name}] Failed to construct object with type {annotation}"
             )
+
+        if origin == Lazy:
+            value_cls = args[0] if args else None
+            return Lazy(config, value_cls, param_name, self)
 
         if isinstance(config, (list, set, tuple)):
             cls = type(config)
