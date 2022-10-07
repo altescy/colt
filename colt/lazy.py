@@ -15,6 +15,8 @@ class Lazy(Generic[T]):
         param_name: Optional[str] = None,
         builder: Optional["ColtBuilder"] = None,
     ) -> None:
+        from colt.builder import ColtBuilder
+
         self._cls = cls
         self._config = config or {}
         self._param_name = param_name or ""
