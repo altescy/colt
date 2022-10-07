@@ -1,5 +1,5 @@
 import typing
-from typing import Any, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Generic, Optional, Type, TypeVar
 
 if typing.TYPE_CHECKING:
     from colt.builder import ColtBuilder
