@@ -243,7 +243,7 @@ class ColtBuilder:
 
         if origin == Lazy:
             value_cls = args[0] if args else None
-            return Lazy(config, value_cls, param_name, self)
+            return Lazy(config, value_cls, self)
 
         if isinstance(config, (list, set, tuple)):
             cls = type(config)

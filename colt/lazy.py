@@ -12,14 +12,12 @@ class Lazy(Generic[T]):
         self,
         config: Any,
         cls: Optional[Type[T]] = None,
-        param_name: Optional[str] = None,
         builder: Optional["ColtBuilder"] = None,
     ) -> None:
         from colt.builder import ColtBuilder
 
         self._cls = cls
         self._config = config or {}
-        self._param_name = param_name or ""
         self._builder = builder or ColtBuilder()
 
     def construct(self, **kwargs: Any) -> T:
