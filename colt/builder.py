@@ -1,4 +1,3 @@
-import copy
 import io
 import sys
 import traceback
@@ -105,7 +104,10 @@ class ColtBuilder:
         if not config:
             return constructor()
 
-        args_config = config.pop(self._argskey, [])
+        args_config = config.get(self._argskey, [])
+        if self._argskey in config:
+            del config[self._argskey]
+
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError(
                 f"[{param_name}] Arguments must be a list or tuple."
@@ -144,7 +146,6 @@ class ColtBuilder:
         annotation: Optional[Type[T]] = None,
         raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
-        config = copy.deepcopy(config)
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
@@ -268,7 +269,8 @@ class ColtBuilder:
             }
 
         if self._typekey in config:
-            class_name = config.pop(self._typekey)
+            class_name = config[self._typekey]
+            del config[self._typekey]
             constructor = self._get_constructor_by_name(
                 class_name, param_name, annotation
             )
