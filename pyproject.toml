@@ -19,7 +19,7 @@ packages = [
 "Issues" = "https://github.com/altescy/colt/issues"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8,<4.0"
 
 [tool.poetry.dev-dependencies]
 python-language-server = "^0.36.2"
