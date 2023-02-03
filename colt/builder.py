@@ -110,7 +110,7 @@ class ColtBuilder:
 
         args_config = config.get(self._argskey, [])
         if self._argskey in config:
-            del config[self._argskey]
+            config.pop(self._argskey)
 
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError(
