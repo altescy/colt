@@ -122,11 +122,17 @@ class ColtBuilder:
         ]
 
         if isinstance(constructor, type):
-            type_hints = get_type_hints(  # type: ignore
-                getattr(constructor, "__init__"),  # noqa: B009
-            )
+            try:  # type: ignore[unreachable]
+                type_hints = get_type_hints(
+                    getattr(constructor, "__init__"),  # noqa: B009
+                )
+            except NameError:
+                type_hints = constructor.__init__.__annotations__
         else:
-            type_hints = get_type_hints(constructor)
+            try:
+                type_hints = get_type_hints(constructor)
+            except NameError:
+                type_hints = constructor.__annotations__
 
         kwargs: Dict[str, Any] = {
             key: self._build(val, self._catname(param_name, key), type_hints.get(key))
