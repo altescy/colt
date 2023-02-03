@@ -79,7 +79,11 @@ class ColtBuilder:
         param_name: str,
         annotation: Optional[Type[T]] = None,
     ) -> Union[Type[T], Callable[..., T]]:
-        if annotation and issubclass(annotation, Registrable):
+        if (
+            annotation
+            and isinstance(annotation, type)
+            and issubclass(annotation, Registrable)
+        ):
             constructor = cast(Type[T], annotation.by_name(name))
         else:
             constructor = cast(Type[T], DefaultRegistry.by_name(name))
@@ -106,7 +110,7 @@ class ColtBuilder:
 
         args_config = config.get(self._argskey, [])
         if self._argskey in config:
-            del config[self._argskey]
+            config.pop(self._argskey)
 
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError(
@@ -118,11 +122,17 @@ class ColtBuilder:
         ]
 
         if isinstance(constructor, type):
-            type_hints = get_type_hints(  # type: ignore
-                getattr(constructor, "__init__"),  # noqa: B009
-            )
+            try:  # type: ignore[unreachable]
+                type_hints = get_type_hints(
+                    getattr(constructor, "__init__"),  # noqa: B009
+                )
+            except NameError:
+                type_hints = constructor.__init__.__annotations__
         else:
-            type_hints = get_type_hints(constructor)
+            try:
+                type_hints = get_type_hints(constructor)
+            except NameError:
+                type_hints = constructor.__annotations__
 
         kwargs: Dict[str, Any] = {
             key: self._build(val, self._catname(param_name, key), type_hints.get(key))
