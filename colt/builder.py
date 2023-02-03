@@ -79,7 +79,11 @@ class ColtBuilder:
         param_name: str,
         annotation: Optional[Type[T]] = None,
     ) -> Union[Type[T], Callable[..., T]]:
-        if annotation and issubclass(annotation, Registrable):
+        if (
+            annotation
+            and isinstance(annotation, type)
+            and issubclass(annotation, Registrable)
+        ):
             constructor = cast(Type[T], annotation.by_name(name))
         else:
             constructor = cast(Type[T], DefaultRegistry.by_name(name))
