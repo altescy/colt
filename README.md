@@ -1,5 +1,4 @@
-colt
-===
+# colt
 
 [![CI Actions Status](https://github.com/altescy/colt/workflows/CI/badge.svg)](https://github.com/altescy/colt/actions?query=workflow%3ACI)
 [![Pulish Actions Status](https://github.com/altescy/colt/workflows/publish/badge.svg)](https://github.com/altescy/colt/actions?query=workflow%3Apublish)
@@ -9,26 +8,45 @@ colt
 
 ## Quick Links
 
-- [Installation](#Installation)
-- [Basic Examples](#Examples)
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Influences](#influences)
 - [kaggle Titanic Example](https://github.com/altescy/colt/tree/master/examples/titanic)
 
 ## Introduction
 
-`colt` is a configuration utility for Python objects.
-`colt` constructs Python objects from a configuration dict which is convertable into JSON.
-(Inspired by [AllenNLP](https://github.com/allenai/allennlp))
+`colt` is a lightweight configuration utility for Python objects, allowing you to manage complex configurations for your projects easily.
+Written solely using the Python standard library, `colt` can construct class objects from JSON-convertible dictionaries, making it simple to manage your settings using JSON or YAML files. The library is particularly suitable for the [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) design pattern.
 
+Some key features of colt include:
+
+- No external dependencies, as it is built using the Python standard library.
+- Construct class objects from JSON-convertible dictionaries.
+- Manage complex configurations using JSON or YAML files.
+- Well-suited for dependency injection design patterns.
+
+Inspired by [AllenNLP](https://github.com/allenai/allennlp) and [Tango](https://github.com/allenai/tango), `colt` aims to offer similar functionality while focusing on a more lightweight and user-friendly design.
+
+### Differences between `colt` and AllenNLP/Tango
+
+While both AllenNLP and Tango construct objects based on the class signature, colt focuses on building objects from the type specified in the configuration. Although colt is aware of the class signature, it primarily uses it for validation when passing objects created from the configuration.
+
+This means that with colt, you don't necessarily need to have the target class available for configuration. As a result, you can conveniently build objects using the colt.build method without requiring the specific class to be present. This distinction makes colt more flexible and easier to work with in various scenarios.
 
 ## Installation
 
-```
+To install colt, simply run the following command:
+
+```bash
 pip install colt
 ```
 
-## Examples
+## Usage
 
-#### Basic Usage
+### Basic Example
+
+Here is a basic example of how to use colt to create class objects from a configuration dictionary:
 
 ```python
 import typing as tp
@@ -61,41 +79,36 @@ if __name__ == "__main__":
         # => "hello world"
 ```
 
-#### `scikit-learn` Configuration
+### Functionality
+
+#### Guiding Object Construction with a Target Class
+
+You can guide the object construction process in `colt` by passing the desired class as the second argument to the `colt.build` method.
+Here's an example demonstrating this functionality:
 
 ```python
-import colt
+@colt.register("foo")
+class Foo:
+    def __init__(self, x: str) -> None:
+        self.x = x
 
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
+config = {"x": "abc"}
 
-if __name__ == "__main__":
-    config = {
-        # import types automatically if type name is not registerd
-        "@type": "sklearn.ensemble.VotingClassifier",
-        "estimators": [
-            ("rfc", { "@type": "sklearn.ensemble.RandomForestClassifier",
-                      "n_estimators": 10 }),
-            ("svc", { "@type": "sklearn.svm.SVC",
-                      "gamma": "scale" }),
-        ]
-    }
+# Pass the desired class as the second argument
+obj = colt.build(config, Foo)
 
-    X, y = load_iris(return_X_y=True)
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y)
-
-    model = colt.build(config)
-    model.fit(X_train, y_train)
-
-    valid_accuracy = model.score(X_valid, y_valid)
-    print(f"valid_accuracy: {valid_accuracy}")
+assert isinstance(obj, Foo)
+assert obj.x == "abc"
 ```
 
+By providing the target class to `colt.build`, you can ensure the constructed object is of the desired type while still using the configuration for parameter values.
 
-### `Registrable` Class
+#### `Registrable` class
 
-By using the `Registrable` class, you can devide namespace into each class.
-In a following example, `Foo` and `Bar` have different namespaces.
+`colt` provides the Registrable class, which allows you to divide the namespace for each class.
+This can be particularly useful when working with larger projects or when you need to manage multiple classes with the same name but different functionality.
+
+Here is an example of how to use the `Registrable` class to manage different namespaces for `Foo` and `Bar`:
 
 ```python
 import colt
@@ -132,3 +145,79 @@ if __name__ == "__main__":
     assert isinstance(obj.foo, FooBaz)
     assert isinstance(obj.bar, BarBaz)
 ```
+
+#### `Lazy` class
+
+`colt` offers a `Lazy` class for deferring object creation until needed, which can be useful in cases where constructing an object is computationally expensive or should be delayed until certain conditions are met.
+
+Here's a concise example demonstrating the `Lazy` class usage with `colt`:
+
+```python
+import dataclasses
+import colt
+from colt import Lazy
+
+@dataclasses.dataclass
+class Foo:
+    x: str
+    y: int
+
+@dataclasses.dataclass
+class Bar:
+    foo: Lazy[Foo]
+
+bar = colt.build({"foo": {"x": "hello"}}, Bar)
+
+# Additional parameters can be passed when calling the construct() method
+foo = bar.foo.construct(y=10)
+```
+
+In this example, Bar contains a `Lazy` instance of `Foo`, which will only be constructed when construct() is called.
+When calling `construct()`, you can pass additional parameters required for the object's construction.
+This approach allows you to control when an object is created, optimizing resource usage and computations while providing flexibility in passing parameters.
+
+### Advanced Examples
+
+#### scikit-learn Configuration
+
+Here's an example of how to use `colt` ` to configure a [scikit-learn](https://scikit-learn.org/) model:
+
+```python
+import colt
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+if __name__ == "__main__":
+    config = {
+        # these types are imported automatically if type name is not registerd
+        "@type": "sklearn.ensemble.VotingClassifier",
+        "estimators": [
+            ("rfc", { "@type": "sklearn.ensemble.RandomForestClassifier",
+                      "n_estimators": 10 }),
+            ("svc", { "@type": "sklearn.svm.SVC",
+                      "gamma": "scale" }),
+        ]
+    }
+
+    X, y = load_iris(return_X_y=True)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y)
+
+    model = colt.build(config)
+    model.fit(X_train, y_train)
+
+    valid_accuracy = model.score(X_valid, y_valid)
+    print(f"valid_accuracy: {valid_accuracy}")
+```
+
+In this example, `colt` is used to configure a `VotingClassifier` from scikit-learn, combining a `RandomForestClassifier` and an `SVC`.
+The colt configuration dictionary makes it easy to manage the settings of these classifiers and modify them as needed.
+
+## Influences
+
+`colt` is heavily influenced by the following projects:
+
+- [AllenNLP](https://github.com/allenai/allennlp): A popular natural language processing library, which provides a powerful configuration system for managing complex experiments.
+- [Tango](https://github.com/allenai/tango): A lightweight and flexible library for running machine learning experiments, designed to work well with AllenNLP and other libraries.
+
+These projects have demonstrated the value of a robust configuration system for managing machine learning experiments and inspired the design of `colt`.
