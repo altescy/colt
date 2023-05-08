@@ -1,10 +1,12 @@
-# colt
+# 🐎 Colt
 
 [![CI Actions Status](https://github.com/altescy/colt/workflows/CI/badge.svg)](https://github.com/altescy/colt/actions?query=workflow%3ACI)
 [![Pulish Actions Status](https://github.com/altescy/colt/workflows/publish/badge.svg)](https://github.com/altescy/colt/actions?query=workflow%3Apublish)
 [![Python version](https://img.shields.io/pypi/pyversions/colt)](https://github.com/altescy/colt)
 [![pypi version](https://img.shields.io/pypi/v/colt)](https://pypi.org/project/colt/)
 [![license](https://img.shields.io/github/license/altescy/colt)](https://github.com/altescy/colt/blob/master/LICENSE)
+
+Effortlessly configure and construct Python objects with `colt`, a lightweight library inspired by [AllenNLP](https://github.com/allenai/allennlp) and [Tango](https://github.com/allenai/tango)
 
 ## Quick Links
 
