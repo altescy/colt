@@ -182,7 +182,7 @@ This approach allows you to control when an object is created, optimizing resour
 
 #### scikit-learn Configuration
 
-Here's an example of how to use `colt` ` to configure a [scikit-learn](https://scikit-learn.org/) model:
+Here's an example of how to use `colt` to configure a [scikit-learn](https://scikit-learn.org/) model:
 
 ```python
 import colt
