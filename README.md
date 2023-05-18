@@ -40,7 +40,7 @@ This means that with colt, you don't necessarily need to have the target class a
 
 To install colt, simply run the following command:
 
-```bash
+```shell
 pip install colt
 ```
 
@@ -48,7 +48,7 @@ pip install colt
 
 ### Basic Example
 
-Here is a basic example of how to use colt to create class objects from a configuration dictionary:
+Here is a basic example of how to use `colt` to create class objects from a configuration dictionary:
 
 ```python
 import typing as tp
@@ -174,7 +174,7 @@ bar = colt.build({"foo": {"x": "hello"}}, Bar)
 foo = bar.foo.construct(y=10)
 ```
 
-In this example, `Bar` contains a `Lazy` instance of `Foo`, which will only be constructed when construct() is called.
+In this example, `Bar` contains a `Lazy` instance of `Foo`, which will only be constructed when `construct()` is called.
 When calling `construct()`, you can pass additional parameters required for the object's construction.
 This approach allows you to control when an object is created, optimizing resource usage and computations while providing flexibility in passing parameters.
 
