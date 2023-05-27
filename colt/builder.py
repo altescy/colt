@@ -206,7 +206,7 @@ class ColtBuilder:
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
-        if origin in (Dict, dict):
+        if origin in (Dict, dict, abc.Mapping, abc.MutableMapping):
             key_cls = args[0] if args else None
             value_cls = args[1] if args else None
             return {
