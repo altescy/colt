@@ -1,4 +1,21 @@
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
+import dataclasses
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Literal,
+    Mapping,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import colt
 
@@ -250,3 +267,43 @@ def test_build_literal() -> None:
 
     assert isinstance(obj, Foo)
     assert colt.build(config, Foo).x == "hello"
+
+
+def test_build_with_abstract_classes() -> None:
+    @dataclasses.dataclass
+    class Foo:
+        name: str
+
+    @colt.register("func")
+    class Func:
+        def __call__(self) -> None:
+            pass
+
+    @colt.register("iter")
+    class Iter:
+        def __iter__(self) -> Iterator[Foo]:
+            return iter([])
+
+    @dataclasses.dataclass
+    class Bar:
+        func: Callable[[str], None]
+        sequence: Sequence[Foo]
+        mapping: Mapping[str, Foo]
+        mutable_sequence: MutableSequence[Foo]
+        mutable_mapping: MutableMapping[str, Foo]
+        iterable: Iterable[Foo]
+        iterator: Iterator[Foo]
+
+    config = {
+        "func": {"@type": "func"},
+        "sequence": [{"name": "a"}, {"name": "b"}],
+        "mapping": {"a": {"name": "a"}, "b": {"name": "b"}},
+        "mutable_sequence": [{"name": "a"}, {"name": "b"}],
+        "mutable_mapping": {"a": {"name": "a"}, "b": {"name": "b"}},
+        "iterable": [{"name": "a"}, {"name": "b"}],
+        "iterator": {"@type": "iter"},
+    }
+
+    output = colt.build(config, Bar)
+    assert isinstance(output.func, Func)
+    assert isinstance(output.iterator, Iter)  # type: ignore[unreachable]
