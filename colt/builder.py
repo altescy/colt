@@ -94,6 +94,16 @@ class ColtBuilder:
         return constructor
 
     @staticmethod
+    def _is_namedtuple(cls: Type[T]) -> bool:
+        bases = getattr(cls, "__bases__", [])
+        if len(bases) != 1 or bases[0] != tuple:
+            return False
+        fields = getattr(cls, "_fields", None)
+        if not isinstance(fields, tuple):
+            return False
+        return all(type(name) == str for name in fields)
+
+    @staticmethod
     def _catname(parent: str, *keys: Union[int, str]) -> str:
         key = ".".join(str(x) for x in keys)
         return f"{parent}.{key}" if parent else key
@@ -224,6 +234,17 @@ class ColtBuilder:
                     f"[{param_name}] {config} is not a valid literal value."
                 )
             return config
+
+        if annotation and self._is_namedtuple(annotation):
+            kwargs = {
+                field_name: self._build(
+                    config.get(field_name, {}),
+                    self._catname(param_name, field_name),
+                    field_annotation,
+                )
+                for field_name, field_annotation in get_type_hints(annotation).items()
+            }
+            return annotation(**kwargs)
 
         if origin in (Union, UnionType):
             if not args:

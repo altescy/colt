@@ -10,6 +10,7 @@ from typing import (
     Mapping,
     MutableMapping,
     MutableSequence,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -307,3 +308,21 @@ def test_build_with_abstract_classes() -> None:
     output = colt.build(config, Bar)
     assert isinstance(output.func, Func)
     assert isinstance(output.iterator, Iter)  # type: ignore[unreachable]
+
+
+def test_build_with_namedtuple() -> None:
+    class Item(NamedTuple):
+        name: str
+        foo: Foo
+
+    class Container(NamedTuple):
+        item: Item
+
+    config = {"item": {"name": "a", "foo": {"x": "hello"}}}
+    obj = colt.build(config, Container)
+
+    assert isinstance(obj, Container)
+    assert isinstance(obj.item, Item)
+    assert obj.item.name == "a"
+    assert isinstance(obj.item.foo, Foo)
+    assert obj.item.foo.x == "hello"
