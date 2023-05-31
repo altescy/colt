@@ -236,13 +236,14 @@ class ColtBuilder:
             return config
 
         if annotation and self._is_namedtuple(annotation):
+            type_hints = get_type_hints(annotation)
             kwargs = {
-                field_name: self._build(
-                    config.get(field_name, {}),
-                    self._catname(param_name, field_name),
-                    field_annotation,
+                key: self._build(
+                    value_config,
+                    self._catname(param_name, key),
+                    type_hints.get(key),
                 )
-                for field_name, field_annotation in get_type_hints(annotation).items()
+                for key, value_config in config.items()
             }
             return annotation(**kwargs)
 
