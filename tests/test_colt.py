@@ -316,13 +316,13 @@ def test_build_with_namedtuple() -> None:
         foo: Foo
 
     class Container(NamedTuple):
-        item: Item
+        item: Union[str, Sequence[Item]]
 
-    config = {"item": {"name": "a", "foo": {"x": "hello"}}}
+    config = {"item": [{"name": "a", "foo": {"x": "hello"}}]}
     obj = colt.build(config, Container)
 
     assert isinstance(obj, Container)
-    assert isinstance(obj.item, Item)
-    assert obj.item.name == "a"
-    assert isinstance(obj.item.foo, Foo)
-    assert obj.item.foo.x == "hello"
+    assert isinstance(obj.item[0], Item)
+    assert obj.item[0].name == "a"
+    assert isinstance(obj.item[0].foo, Foo)
+    assert obj.item[0].foo.x == "hello"
