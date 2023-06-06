@@ -11,6 +11,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -175,17 +176,19 @@ class ColtBuilder:
         origin = typing.get_origin(annotation)
         args = typing.get_args(annotation)
 
+        print(param_name, annotation, config)
+
         if config is None:
             return config
 
-        if origin in (List, list):
+        if origin in (List, list, Sequence, abc.Sequence, abc.MutableSequence):
             value_cls = args[0] if args else None
             return list(
                 self._build(x, self._catname(param_name, i), value_cls)
                 for i, x in enumerate(config)
             )
 
-        if origin in (Set, set):
+        if origin in (Set, set, abc.Set):
             value_cls = args[0] if args else None
             return set(
                 self._build(x, self._catname(param_name, i), value_cls)
@@ -279,6 +282,16 @@ class ColtBuilder:
             return Lazy(config, param_name, value_cls, self)
 
         if isinstance(config, (list, set, tuple)):
+            if origin is not None and not isinstance(config, origin):
+                raise ConfigurationError(
+                    f"[{param_name}] Type mismatch, expected type is "
+                    f"{origin}, but actual type is {type(config)}."
+                )
+            if isinstance(annotation, type) and not isinstance(config, annotation):
+                raise ConfigurationError(
+                    f"[{param_name}] Type mismatch, expected type is "
+                    f"{annotation}, but actual type is {type(config)}."
+                )
             cls = type(config)
             value_cls = args[0] if args else None
             return cls(
@@ -287,7 +300,12 @@ class ColtBuilder:
             )
 
         if not isinstance(config, dict):
-            if annotation is not None and not isinstance(config, annotation):
+            if origin is not None and not isinstance(config, origin):
+                raise ConfigurationError(
+                    f"[{param_name}] Type mismatch, expected type is "
+                    f"{origin}, but actual type is {type(config)}."
+                )
+            if isinstance(annotation, type) and not isinstance(config, annotation):
                 raise ConfigurationError(
                     f"[{param_name}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
@@ -301,13 +319,23 @@ class ColtBuilder:
             }
 
         if self._typekey in config:
-            class_name = config[self._typekey]
-            del config[self._typekey]
+            class_name = config.pop(self._typekey)
             constructor = self._get_constructor_by_name(
                 class_name, param_name, annotation
             )
         else:
             constructor = origin or annotation  # type: ignore
+
+        if (
+            annotation is not None
+            and isinstance(constructor, type)
+            and isinstance(annotation, type)
+            and not issubclass(constructor, annotation)
+        ):
+            raise ConfigurationError(
+                f"[{param_name}] Type mismatch, expected type is "
+                f"{annotation}, but actual type is {constructor}."
+            )
 
         return self._construct_with_args(
             constructor, config, param_name, raise_configuration_error
