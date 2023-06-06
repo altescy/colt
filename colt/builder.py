@@ -176,8 +176,6 @@ class ColtBuilder:
         origin = typing.get_origin(annotation)
         args = typing.get_args(annotation)
 
-        print(param_name, annotation, config)
-
         if config is None:
             return config
 
