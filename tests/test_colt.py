@@ -307,6 +307,8 @@ def test_build_with_abstract_classes() -> None:
 
     output = colt.build(config, Bar)
     assert isinstance(output.func, Func)
+    assert isinstance(output.sequence[0], Foo)  # type: ignore[unreachable]
+    assert isinstance(output.mapping["a"], Foo)  # type: ignore[unreachable]
     assert isinstance(output.iterator, Iter)  # type: ignore[unreachable]
 
 
