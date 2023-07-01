@@ -65,7 +65,7 @@ class Registrable:
             subclass, constructor = registry[name]
             return subclass, constructor
 
-        if allow_to_import and ("." in name) or (":" in name):
+        if allow_to_import and (("." in name) or (":" in name)):
             if ":" in name:
                 modulename, subname = name.split(":", 1)
             else:
