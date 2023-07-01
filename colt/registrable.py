@@ -45,8 +45,10 @@ class Registrable:
         return decorator
 
     @classmethod
-    def by_name(cls, name: str) -> Union[Type[T], Callable[..., T]]:
-        subclass, constructor = cls.resolve_class_name(name)
+    def by_name(
+        cls, name: str, allow_to_import: bool = True
+    ) -> Union[Type[T], Callable[..., T]]:
+        subclass, constructor = cls.resolve_class_name(name, allow_to_import)
 
         if not constructor:
             return subclass
@@ -54,30 +56,39 @@ class Registrable:
         return cast(Callable[..., T], getattr(subclass, constructor))
 
     @classmethod
-    def resolve_class_name(cls, name: str) -> Tuple[Type[Any], Optional[str]]:
+    def resolve_class_name(
+        cls, name: str, allow_to_import: bool = True
+    ) -> Tuple[Type[Any], Optional[str]]:
         registry = Registrable._registry[cls]
 
         if name in registry:
             subclass, constructor = registry[name]
             return subclass, constructor
 
-        if "." in name:
-            submodule, class_name = name.rsplit(".", 1)
+        if allow_to_import and ("." in name) or (":" in name):
+            if ":" in name:
+                modulename, subname = name.split(":", 1)
+            else:
+                modulename, subname = name.rsplit(".", 1)
 
             try:
-                module = importlib.import_module(submodule)
+                module = importlib.import_module(modulename)
             except ModuleNotFoundError as e:
                 raise ConfigurationError(
-                    f"module {submodule} not found ({name})"
+                    f"module {modulename} not found ({name})"
                 ) from e
 
             try:
-                subclass = getattr(module, class_name)
+                if "." in subname:
+                    while "." in subname:
+                        parentname, subname = subname.split(".", 1)
+                        module = getattr(module, parentname)
+                subclass = getattr(module, subname)
                 constructor = None
                 return subclass, constructor
             except AttributeError as e:
                 raise ConfigurationError(
-                    f"class {class_name} not found in {submodule} ({name})"
+                    f"attribute {subname} not found in {modulename} ({name})"
                 ) from e
 
         raise ConfigurationError(
