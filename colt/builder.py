@@ -173,7 +173,6 @@ class ColtBuilder:
         annotation: Optional[Type[T]] = None,
         raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
-        print(f"{param_name=} {annotation=} {config=}")
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
