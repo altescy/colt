@@ -2,6 +2,7 @@ import io
 import sys
 import traceback
 import typing
+import warnings
 from collections import abc
 from typing import (
     Any,
@@ -10,6 +11,7 @@ from typing import (
     Final,
     List,
     Literal,
+    Mapping,
     Optional,
     Sequence,
     Set,
@@ -47,9 +49,11 @@ class ColtBuilder:
         self,
         typekey: Optional[str] = None,
         argskey: Optional[str] = None,
+        strict: bool = False,
     ) -> None:
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
+        self._strict = strict
 
     @overload
     def __call__(self, config: Any) -> Any:
@@ -79,15 +83,16 @@ class ColtBuilder:
         name: str,
         param_name: str,
         annotation: Optional[Type[T]] = None,
+        allow_to_import: bool = True,
     ) -> Union[Type[T], Callable[..., T]]:
         if (
             annotation
             and isinstance(annotation, type)
             and issubclass(annotation, Registrable)
         ):
-            constructor = cast(Type[T], annotation.by_name(name))
+            constructor = cast(Type[T], annotation.by_name(name, allow_to_import))
         else:
-            constructor = cast(Type[T], DefaultRegistry.by_name(name))
+            constructor = cast(Type[T], DefaultRegistry.by_name(name, allow_to_import))
 
         if constructor is None:
             raise ConfigurationError(f"[{param_name}] type not found error: {name}")
@@ -112,7 +117,7 @@ class ColtBuilder:
     def _construct_with_args(
         self,
         constructor: Callable[..., T],
-        config: Dict[str, Any],
+        config: Mapping[str, Any],
         param_name: str,
         raise_configuration_error: bool = True,
     ) -> T:
@@ -121,6 +126,7 @@ class ColtBuilder:
 
         args_config = config.get(self._argskey, [])
         if self._argskey in config:
+            config = dict(config)
             config.pop(self._argskey)
 
         if not isinstance(args_config, (list, tuple)):
@@ -167,11 +173,20 @@ class ColtBuilder:
         annotation: Optional[Type[T]] = None,
         raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
+        print(f"{param_name=} {annotation=} {config=}")
         if annotation is not None:
             annotation = self._remove_optional(annotation)
 
         if annotation == Any:
             annotation = None
+
+        if self._strict and annotation is None:
+            warnings.warn(
+                f"[{param_name}] Given config is not constructed because currently "
+                "strict mode is enabled and the type annotation is not given.",
+                UserWarning,
+            )
+            return config
 
         origin = typing.get_origin(annotation)
         args = typing.get_args(annotation)
@@ -297,7 +312,7 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
-        if not isinstance(config, dict):
+        if not isinstance(config, abc.Mapping):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
                     f"[{param_name}] Type mismatch, expected type is "
@@ -317,9 +332,10 @@ class ColtBuilder:
             }
 
         if self._typekey in config:
+            config = dict(config)
             class_name = config.pop(self._typekey)
             constructor = self._get_constructor_by_name(
-                class_name, param_name, annotation
+                class_name, param_name, annotation, allow_to_import=not self._strict
             )
         else:
             constructor = origin or annotation  # type: ignore

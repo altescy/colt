@@ -31,6 +31,7 @@ def build(
     *,
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
+    strict: bool = ...,
 ) -> T:
     ...
 
@@ -42,6 +43,7 @@ def build(
     *,
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
+    strict: bool = ...,
 ) -> Any:
     ...
 
@@ -52,6 +54,7 @@ def build(
     *,
     typekey: Optional[str] = None,
     argskey: Optional[str] = None,
+    strict: bool = False,
 ) -> Union[T, Any]:
-    builder = ColtBuilder(typekey, argskey)
+    builder = ColtBuilder(typekey, argskey, strict)
     return builder(config, cls)
