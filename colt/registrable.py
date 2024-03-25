@@ -69,7 +69,7 @@ class Registrable:
             if ":" in name:
                 modulename, subname = name.split(":", 1)
             else:
-                modulename, subname = name.rsplit(".", 1)
+                modulename, subname = name.split(".", 1)
 
             try:
                 module = importlib.import_module(modulename)
