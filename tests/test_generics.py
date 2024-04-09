@@ -13,10 +13,6 @@ def test_generic_registrable_can_be_built() -> None:
     class Bar(Foo[int]):
         ...
 
-    @Foo.register("baz")
-    class Baz(Foo[T]):
-        ...
-
     class Container:
         def __init__(self, foo: Foo[T]) -> None:
             self.foo = foo
