@@ -85,12 +85,17 @@ class ColtBuilder:
         annotation: Optional[Type[T]] = None,
         allow_to_import: bool = True,
     ) -> Union[Type[T], Callable[..., T]]:
+        origin: Any
+        if isinstance(annotation, type):
+            origin = annotation
+        else:
+            origin = typing.get_origin(annotation) if annotation else None
         if (
-            annotation
-            and isinstance(annotation, type)
-            and issubclass(annotation, Registrable)
+            origin is not None
+            and isinstance(origin, type)
+            and issubclass(origin, Registrable)
         ):
-            constructor = cast(Type[T], annotation.by_name(name, allow_to_import))
+            constructor = cast(Type[T], origin.by_name(name, allow_to_import))
         else:
             constructor = cast(Type[T], DefaultRegistry.by_name(name, allow_to_import))
 
@@ -107,7 +112,7 @@ class ColtBuilder:
         fields = getattr(cls, "_fields", None)
         if not isinstance(fields, tuple):
             return False
-        return all(type(name) == str for name in fields)
+        return all(type(name) is str for name in fields)
 
     @staticmethod
     def _catname(parent: str, *keys: Union[int, str]) -> str:
