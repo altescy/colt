@@ -112,7 +112,7 @@ class ColtBuilder:
         fields = getattr(cls, "_fields", None)
         if not isinstance(fields, tuple):
             return False
-        return all(type(name) == str for name in fields)
+        return all(type(name) is str for name in fields)
 
     @staticmethod
     def _catname(parent: str, *keys: Union[int, str]) -> str:
