@@ -36,7 +36,9 @@ class Registrable:
                 raise ValueError(f"type name conflict: {name}")
 
             if constructor and not hasattr(subclass, constructor):
-                raise ValueError(f"constructor {constructor} not found in {subclass}")
+                raise ValueError(
+                    f"constructor {constructor} not found in {subclass}"  # noqa: E713
+                )
 
             registry[name] = (subclass, constructor)
 
@@ -87,7 +89,7 @@ class Registrable:
                 return subclass, constructor
             except AttributeError as e:
                 raise ConfigurationError(
-                    f"attribute {subname} not found in {modulename} ({name})"
+                    f"attribute {subname} not found in {modulename} ({name})"  # noqa: E713
                 ) from e
 
         raise ConfigurationError(
