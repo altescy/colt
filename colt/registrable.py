@@ -69,7 +69,7 @@ class Registrable:
             if ":" in name:
                 modulename, subname = name.split(":", 1)
             else:
-                modulename, subname = name.split(".", 1)
+                modulename, subname = name.rsplit(".", 1)
 
             try:
                 module = importlib.import_module(modulename)
@@ -79,10 +79,9 @@ class Registrable:
                 ) from e
 
             try:
-                if "." in subname:
-                    while "." in subname:
-                        parentname, subname = subname.split(".", 1)
-                        module = getattr(module, parentname)
+                while "." in subname:
+                    parentname, subname = subname.split(".", 1)
+                    module = getattr(module, parentname)
                 subclass = getattr(module, subname)
                 constructor = None
                 return subclass, constructor
