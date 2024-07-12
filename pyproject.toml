@@ -23,15 +23,15 @@ python = ">=3.8,<4.0"
 
 [tool.poetry.dev-dependencies]
 python-language-server = "^0.36.2"
-pytest = "^7.3.1"
-pysen = "^0.10.4"
-black = "^23.3.0"
-isort = "^5.12.0"
+pytest = "^7.4.4"
+pysen = "^0.11.0"
+black = "^24.4.2"
+isort = "^5.13.2"
 flake8 = "^5.0.4"
-mypy = "^1.2.0"
+mypy = "^1.10.0"
 
 [tool.pysen]
-version = "0.10"
+version = "0.11"
 
 [tool.pysen-cli]
 settings_dir = "."
