@@ -32,8 +32,7 @@ def build(
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
     strict: bool = ...,
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -44,8 +43,7 @@ def build(
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
     strict: bool = ...,
-) -> Any:
-    ...
+) -> Any: ...
 
 
 def build(

@@ -6,8 +6,7 @@ from colt import Registrable
 
 
 def test_strict_mode() -> None:
-    class Foo(Registrable):
-        ...
+    class Foo(Registrable): ...
 
     @Foo.register("bar")
     class Bar(Foo):

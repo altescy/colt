@@ -28,8 +28,7 @@ if sys.version_info >= (3, 10):
     from types import UnionType
 else:
 
-    class UnionType:
-        ...
+    class UnionType: ...
 
 
 from colt.default_registry import DefaultRegistry
@@ -56,16 +55,13 @@ class ColtBuilder:
         self._strict = strict
 
     @overload
-    def __call__(self, config: Any) -> Any:
-        ...
+    def __call__(self, config: Any) -> Any: ...
 
     @overload
-    def __call__(self, config: Any, cls: Type[T]) -> T:
-        ...
+    def __call__(self, config: Any, cls: Type[T]) -> T: ...
 
     @overload
-    def __call__(self, config: Any, cls: None = ...) -> Any:
-        ...
+    def __call__(self, config: Any, cls: None = ...) -> Any: ...
 
     def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Union[T, Any]:
         return self._build(config, "", cls)

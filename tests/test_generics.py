@@ -6,12 +6,10 @@ T = TypeVar("T")
 
 
 def test_generic_registrable_can_be_built() -> None:
-    class Foo(colt.Registrable, Generic[T]):
-        ...
+    class Foo(colt.Registrable, Generic[T]): ...
 
     @Foo.register("bar")
-    class Bar(Foo[int]):
-        ...
+    class Bar(Foo[int]): ...
 
     class Container:
         def __init__(self, foo: Foo[T]) -> None:
