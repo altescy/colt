@@ -61,9 +61,16 @@ class ColtBuilder:
     def __call__(self, config: Any, cls: Type[T]) -> T: ...
 
     @overload
+    def __call__(self, config: Any, cls: Callable[..., T]) -> T: ...
+
+    @overload
     def __call__(self, config: Any, cls: None = ...) -> Any: ...
 
-    def __call__(self, config: Any, cls: Optional[Type[T]] = None) -> Union[T, Any]:
+    def __call__(
+        self,
+        config: Any,
+        cls: Optional[Union[Type[T], Callable[..., T]]] = None,
+    ) -> Union[T, Any]:
         return self._build(config, "", cls)
 
     @staticmethod
@@ -78,7 +85,7 @@ class ColtBuilder:
     def _get_constructor_by_name(
         name: str,
         param_name: str,
-        annotation: Optional[Type[T]] = None,
+        annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         allow_to_import: bool = True,
     ) -> Union[Type[T], Callable[..., T]]:
         origin: Any
@@ -94,14 +101,14 @@ class ColtBuilder:
             constructor = cast(Type[T], origin.by_name(name, allow_to_import))
         else:
             constructor = cast(Type[T], DefaultRegistry.by_name(name, allow_to_import))
-
         if constructor is None:
             raise ConfigurationError(f"[{param_name}] type not found error: {name}")
-
         return constructor
 
     @staticmethod
-    def _is_namedtuple(cls: Type[T]) -> bool:
+    def _is_namedtuple(cls: Any) -> bool:
+        if not isinstance(cls, type):
+            return False
         bases = getattr(cls, "__bases__", [])
         if len(bases) != 1 or bases[0] != tuple:
             return False
@@ -171,10 +178,10 @@ class ColtBuilder:
         self,
         config: Any,
         param_name: str,
-        annotation: Optional[Type[T]] = None,
+        annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         raise_configuration_error: bool = True,
     ) -> Union[T, Any]:
-        if annotation is not None:
+        if annotation is not None and isinstance(annotation, type):
             annotation = self._remove_optional(annotation)
 
         if annotation == Any:
