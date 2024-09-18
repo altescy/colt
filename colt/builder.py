@@ -77,8 +77,10 @@ class ColtBuilder:
         self,
         config: Any,
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
+        *,
+        param_name: str = "",
     ) -> Union[T, Any]:
-        return self._build(config, "", cls, skip_construction=True)
+        return self._build(config, param_name, cls, skip_construction=True)
 
     @staticmethod
     def _remove_optional(annotation: type) -> type:

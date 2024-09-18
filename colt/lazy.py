@@ -22,7 +22,7 @@ class Lazy(Generic[T]):
         self._param_name = param_name
         self._builder = builder or ColtBuilder()
 
-        self._builder.dry_run(self._config, self._cls)
+        self._builder.dry_run(self._config, self._cls, param_name=self._param_name)
 
     def construct(self, **kwargs: Any) -> T:
         config = {**self._config, **kwargs}
