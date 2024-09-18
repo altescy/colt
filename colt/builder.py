@@ -73,6 +73,15 @@ class ColtBuilder:
     ) -> Union[T, Any]:
         return self._build(config, "", cls)
 
+    def dry_run(
+        self,
+        config: Any,
+        cls: Optional[Union[Type[T], Callable[..., T]]] = None,
+        *,
+        param_name: str = "",
+    ) -> Union[T, Any]:
+        return self._build(config, param_name, cls, skip_construction=True)
+
     @staticmethod
     def _remove_optional(annotation: type) -> type:
         origin = typing.get_origin(annotation)
@@ -122,15 +131,15 @@ class ColtBuilder:
         key = ".".join(str(x) for x in keys)
         return f"{parent}.{key}" if parent else key
 
-    def _construct_with_args(
+    def _construct_args(
         self,
         constructor: Callable[..., T],
         config: Mapping[str, Any],
         param_name: str,
-        raise_configuration_error: bool = True,
-    ) -> T:
+        skip_construction: bool = False,
+    ) -> Tuple[List[Any], Dict[str, Any]]:
         if not config:
-            return constructor()
+            return [], {}
 
         args_config = config.get(self._argskey, [])
         if self._argskey in config:
@@ -142,7 +151,11 @@ class ColtBuilder:
                 f"[{param_name}] Arguments must be a list or tuple."
             )
         args: List[Any] = [
-            self._build(val, self._catname(param_name, self._argskey, i))
+            self._build(
+                val,
+                self._catname(param_name, self._argskey, i),
+                skip_construction=skip_construction,
+            )
             for i, val in enumerate(args_config)
         ]
 
@@ -160,26 +173,25 @@ class ColtBuilder:
                 type_hints = constructor.__annotations__
 
         kwargs: Dict[str, Any] = {
-            key: self._build(val, self._catname(param_name, key), type_hints.get(key))
+            key: self._build(
+                val,
+                self._catname(param_name, key),
+                type_hints.get(key),
+                skip_construction=skip_construction,
+            )
             for key, val in config.items()
         }
 
-        try:
-            return constructor(*args, **kwargs)
-        except Exception as e:
-            if raise_configuration_error:
-                raise ConfigurationError(
-                    f"[{param_name}] Failed to construct object with constructor {constructor}."
-                ) from e
-            else:
-                raise
+        return args, kwargs
 
     def _build(
         self,
         config: Any,
         param_name: str,
         annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
+        *,
         raise_configuration_error: bool = True,
+        skip_construction: bool = False,
     ) -> Union[T, Any]:
         if annotation is not None and isinstance(annotation, type):
             annotation = self._remove_optional(annotation)
@@ -204,27 +216,46 @@ class ColtBuilder:
         if origin in (List, list, Sequence, abc.Sequence, abc.MutableSequence):
             value_cls = args[0] if args else None
             return list(
-                self._build(x, self._catname(param_name, i), value_cls)
+                self._build(
+                    x,
+                    self._catname(param_name, i),
+                    value_cls,
+                    skip_construction=skip_construction,
+                )
                 for i, x in enumerate(config)
             )
 
         if origin in (Set, set, abc.Set):
             value_cls = args[0] if args else None
             return set(
-                self._build(x, self._catname(param_name, i), value_cls)
+                self._build(
+                    x,
+                    self._catname(param_name, i),
+                    value_cls,
+                    skip_construction=skip_construction,
+                )
                 for i, x in enumerate(config)
             )
 
         if origin in (Tuple, tuple):
             if not args:
                 return tuple(
-                    self._build(x, self._catname(param_name, i))
+                    self._build(
+                        x,
+                        self._catname(param_name, i),
+                        skip_construction=skip_construction,
+                    )
                     for i, x in enumerate(config)
                 )
 
             if len(args) == 2 and args[1] == Ellipsis:
                 return tuple(
-                    self._build(x, self._catname(param_name, i), args[0])
+                    self._build(
+                        x,
+                        self._catname(param_name, i),
+                        args[0],
+                        skip_construction=skip_construction,
+                    )
                     for i, x in enumerate(config)
                 )
 
@@ -244,9 +275,15 @@ class ColtBuilder:
             value_cls = args[1] if args else None
             return {
                 self._build(
-                    key_config, self._catname(param_name, f"[key:{i}]"), key_cls
+                    key_config,
+                    self._catname(param_name, f"[key:{i}]"),
+                    key_cls,
+                    skip_construction=skip_construction,
                 ): self._build(
-                    value_config, self._catname(param_name, key_config), value_cls
+                    value_config,
+                    self._catname(param_name, key_config),
+                    value_cls,
+                    skip_construction=skip_construction,
                 )
                 for i, (key_config, value_config) in enumerate(config.items())
             }
@@ -265,20 +302,29 @@ class ColtBuilder:
                     value_config,
                     self._catname(param_name, key),
                     type_hints.get(key),
+                    skip_construction=skip_construction,
                 )
                 for key, value_config in config.items()
             }
+            if skip_construction:
+                return None
             return annotation(**kwargs)
 
         if origin in (Union, UnionType):
             if not args:
-                return self._build(config, param_name)
+                return self._build(
+                    config, param_name, skip_construction=skip_construction
+                )
 
             trial_exceptions: List[Tuple[Any, Exception, str]] = []
             for value_cls in args:
                 try:
                     return self._build(
-                        config, param_name, value_cls, raise_configuration_error=False
+                        config,
+                        param_name,
+                        value_cls,
+                        raise_configuration_error=False,
+                        skip_construction=skip_construction,
                     )
                 except (ValueError, TypeError, ConfigurationError, AttributeError) as e:
                     with io.StringIO() as fp:
@@ -315,7 +361,12 @@ class ColtBuilder:
             cls = type(config)
             value_cls = args[0] if args else None
             return cls(
-                self._build(x, self._catname(param_name, i), value_cls)
+                self._build(
+                    x,
+                    self._catname(param_name, i),
+                    value_cls,
+                    skip_construction=skip_construction,
+                )
                 for i, x in enumerate(config)
             )
 
@@ -334,7 +385,11 @@ class ColtBuilder:
 
         if annotation is None and self._typekey not in config:
             return {
-                key: self._build(val, self._catname(param_name, key))
+                key: self._build(
+                    val,
+                    self._catname(param_name, key),
+                    skip_construction=skip_construction,
+                )
                 for key, val in config.items()
             }
 
@@ -358,6 +413,19 @@ class ColtBuilder:
                 f"{annotation}, but actual type is {constructor}."
             )
 
-        return self._construct_with_args(
-            constructor, config, param_name, raise_configuration_error
+        args_for_constructor, kwargs_for_constructor = self._construct_args(
+            constructor, config, param_name, skip_construction=skip_construction
         )
+
+        if skip_construction:
+            return None
+
+        try:
+            return constructor(*args_for_constructor, **kwargs_for_constructor)
+        except Exception as e:
+            if raise_configuration_error:
+                raise ConfigurationError(
+                    f"[{param_name}] Failed to construct object with constructor {constructor}."
+                ) from e
+            else:
+                raise

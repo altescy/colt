@@ -67,3 +67,15 @@ def build(
 ) -> Union[T, Any]:
     builder = ColtBuilder(typekey, argskey, strict)
     return builder(config, cls)
+
+
+def dry_run(
+    config: Any,
+    cls: Optional[Union[Type[T], Callable[..., T]]] = None,
+    *,
+    typekey: Optional[str] = None,
+    argskey: Optional[str] = None,
+    strict: bool = False,
+) -> None:
+    builder = ColtBuilder(typekey, argskey, strict)
+    builder.dry_run(config, cls)
