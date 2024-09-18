@@ -9,6 +9,16 @@ from colt.registrable import Registrable  # noqa: F401
 from colt.utils import import_modules  # noqa: F401
 
 __version__ = version("colt")
+__all__ = [
+    "Lazy",
+    "Registrable",
+    "ConfigurationError",
+    "DefaultRegistry",
+    "import_modules",
+    "register",
+    "build",
+    "dry_run",
+]
 
 T = TypeVar("T")
 
