@@ -328,3 +328,14 @@ def test_build_with_namedtuple() -> None:
     assert obj.item[0].name == "a"
     assert isinstance(obj.item[0].foo, Foo)
     assert obj.item[0].foo.x == "hello"
+
+
+def test_build_with_callable() -> None:
+    def build_foo(x: str) -> Foo:
+        return Foo(x)
+
+    config = {"x": "hello"}
+    obj = colt.build(config, build_foo)
+
+    assert isinstance(obj, Foo)
+    assert obj.x == "hello"

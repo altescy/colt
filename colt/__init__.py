@@ -38,6 +38,17 @@ def build(
 @overload
 def build(
     config: Any,
+    cls: Callable[..., T],
+    *,
+    typekey: Optional[str] = ...,
+    argskey: Optional[str] = ...,
+    strict: bool = ...,
+) -> T: ...
+
+
+@overload
+def build(
+    config: Any,
     cls: None = ...,
     *,
     typekey: Optional[str] = ...,
@@ -48,7 +59,7 @@ def build(
 
 def build(
     config: Any,
-    cls: Optional[Type[T]] = None,
+    cls: Optional[Union[Type[T], Callable[..., T]]] = None,
     *,
     typekey: Optional[str] = None,
     argskey: Optional[str] = None,
