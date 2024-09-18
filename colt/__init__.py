@@ -3,11 +3,22 @@ from typing import Any, Callable, Optional, Type, TypeVar, Union, overload
 
 from colt.builder import ColtBuilder
 from colt.default_registry import DefaultRegistry
+from colt.error import ConfigurationError  # noqa: F401
 from colt.lazy import Lazy  # noqa: F401
 from colt.registrable import Registrable  # noqa: F401
 from colt.utils import import_modules  # noqa: F401
 
 __version__ = version("colt")
+__all__ = [
+    "Lazy",
+    "Registrable",
+    "ConfigurationError",
+    "DefaultRegistry",
+    "import_modules",
+    "register",
+    "build",
+    "dry_run",
+]
 
 T = TypeVar("T")
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "colt"
-version = "0.11.3"
+version = "0.12.0"
 description = "A configuration utility for Python object."
 authors = ["altescy <altescy@fastmail.com>"]
 license = "MIT License"
