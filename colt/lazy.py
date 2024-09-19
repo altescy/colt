@@ -1,5 +1,7 @@
 import typing
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, Mapping, Optional, Sequence, Type, TypeVar, Union
+
+from colt.utils import update_field
 
 if typing.TYPE_CHECKING:
     from colt.builder import ColtBuilder
@@ -22,6 +24,22 @@ class Lazy(Generic[T]):
         self._param_name = param_name
         self._builder = builder or ColtBuilder()
 
+        self._builder.dry_run(self._config, self._cls, param_name=self._param_name)
+
+    @property
+    def config(self) -> Any:
+        return self._config
+
+    def update(
+        self,
+        *args: Mapping[Union[int, str, Sequence[Union[int, str]]], Any],
+        **kwargs: Any,
+    ) -> None:
+        for arg in args:
+            for field, value in arg.items():
+                update_field(self._config, field, value)
+        for k, v in kwargs.items():
+            update_field(self._config, k, v)
         self._builder.dry_run(self._config, self._cls, param_name=self._param_name)
 
     def construct(self, **kwargs: Any) -> T:
