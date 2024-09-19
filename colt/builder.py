@@ -131,6 +131,26 @@ class ColtBuilder:
         key = ".".join(str(x) for x in keys)
         return f"{parent}.{key}" if parent else key
 
+    def _get_constructor(
+        self,
+        config: Any,
+        param_name: str,
+        annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
+    ) -> Optional[Union[Type[T], Callable[..., T]]]:
+        if not isinstance(config, Mapping):
+            return None
+        if self._typekey not in config:
+            return None
+        name = config[self._typekey]
+        if not isinstance(name, str):
+            return None
+        return self._get_constructor_by_name(
+            name,
+            param_name,
+            annotation,
+            allow_to_import=not self._strict,
+        )
+
     def _construct_args(
         self,
         constructor: Callable[..., T],
