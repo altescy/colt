@@ -1,7 +1,7 @@
 import importlib
 import pkgutil
 import sys
-import typing as tp
+from typing import Any, Dict, List, Sequence, Union
 
 
 def import_submodules(package_name: str) -> None:
@@ -25,7 +25,7 @@ def import_submodules(package_name: str) -> None:
         import_submodules(subpackage)
 
 
-def import_modules(module_names: tp.List[str]) -> None:
+def import_modules(module_names: List[str]) -> None:
     """
     This method import modules recursively.
     You should call this method to register your classes
@@ -38,3 +38,38 @@ def import_modules(module_names: tp.List[str]) -> None:
 def indent(s: str, level: int = 1) -> str:
     tabs = "\t" * level
     return tabs + s.replace("\n", f"\n{tabs}")
+
+
+def update_field(
+    obj: Union[Dict[Union[int, str], Any], List[Any]],
+    field: Union[int, str, Sequence[Union[int, str]]],
+    value: Any,
+) -> None:
+    path: Sequence[Union[int, str]]
+    if isinstance(field, str):
+        path = field.split(".")
+    elif isinstance(field, int):
+        path = (field,)
+    else:
+        path = field
+    if len(path) == 1:
+        target_field = path[0]
+        if isinstance(obj, dict):
+            obj[target_field] = value
+        elif isinstance(obj, list):
+            if target_field == "+":
+                obj.append(value)
+            else:
+                target_field = int(target_field)
+                obj[target_field] = value
+        else:
+            raise ValueError("obj must be dict or list")
+    else:
+        target_field = path[0]
+        if isinstance(obj, dict):
+            update_field(obj[target_field], path[1:], value)
+        elif isinstance(obj, list):
+            target_field = int(target_field)
+            update_field(obj[target_field], path[1:], value)
+        else:
+            raise ValueError("obj must be dict or list")
