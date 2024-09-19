@@ -1,5 +1,15 @@
 import typing
-from typing import Any, Generic, Mapping, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Mapping,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from colt.utils import update_field
 
@@ -29,6 +39,10 @@ class Lazy(Generic[T]):
     @property
     def config(self) -> Any:
         return self._config
+
+    @property
+    def constructor(self) -> Optional[Type[T]]:
+        return self._cls
 
     def update(
         self,
