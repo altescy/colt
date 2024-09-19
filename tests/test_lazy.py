@@ -3,7 +3,7 @@ import dataclasses
 import pytest
 
 import colt
-from colt import ConfigurationError, Lazy
+from colt import ConfigurationError, Lazy, Registrable
 
 
 def test_lazy() -> None:
@@ -49,3 +49,32 @@ def test_lazy_update() -> None:
 
     with pytest.raises(ConfigurationError):
         bar.foo.update(name=123)
+
+
+def test_lazy_constructor() -> None:
+    @dataclasses.dataclass
+    class Foo:
+        name: str
+
+    @dataclasses.dataclass
+    class Bar:
+        foo: Lazy[Foo]
+
+    bar = colt.build({"foo": {"name": "foo"}}, Bar)
+
+    assert bar.foo.constructor == Foo
+
+
+def test_lazy_constructor_with_registrable() -> None:
+    class Foo(Registrable): ...
+
+    @Foo.register("bar")
+    class Bar(Foo): ...
+
+    @dataclasses.dataclass
+    class Baz:
+        foo: Lazy[Foo]
+
+    baz = colt.build({"foo": {"@type": "bar"}}, Baz)
+
+    assert baz.foo.constructor == Bar
