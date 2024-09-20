@@ -5,6 +5,7 @@ from colt.builder import ColtBuilder
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError  # noqa: F401
 from colt.lazy import Lazy  # noqa: F401
+from colt.placeholder import Placeholder  # noqa: F401
 from colt.registrable import Registrable  # noqa: F401
 from colt.utils import import_modules  # noqa: F401
 
