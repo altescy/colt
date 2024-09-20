@@ -1,8 +1,8 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 import pytest
 
-from colt.utils import update_field
+from colt.utils import issubtype, update_field
 
 
 @pytest.mark.parametrize(
@@ -26,3 +26,32 @@ def test_update_field(
 ) -> None:
     update_field(obj, field, value)
     assert obj == expected
+
+
+@pytest.mark.parametrize(
+    "a, b, expected",
+    [
+        (int, int, True),
+        (int, float, False),
+        (List[int], List[int], True),
+        (List[int], List[float], False),
+        (List[int], List, True),
+        (List, List[int], False),
+        (List[int], Sequence[int], True),
+        (Sequence[int], List[int], False),
+        (List[Dict[str, int]], List[Dict[str, int]], True),
+        (List[Dict[str, int]], Sequence[Dict[str, int]], True),
+        (List[Dict[str, int]], Sequence[Dict[int, int]], False),
+        (List[str], Any, True),
+        (List[str], List[Any], True),
+        (Dict[str, int], Dict[str, Any], True),
+        (Tuple[str, int], Tuple[str, int], True),
+        (Tuple[str, int], Tuple[str, Any], True),
+        (Tuple[str, ...], Tuple[str, ...], True),
+        (Tuple[int, ...], Tuple[str, ...], False),
+        (Tuple[int, ...], Tuple[Any, ...], True),
+        (Tuple[int, ...], Sequence[int], True),
+    ],
+)
+def test_issubtype(a: Any, b: Any, expected: bool) -> None:
+    assert issubtype(a, b) == expected
