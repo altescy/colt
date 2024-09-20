@@ -36,11 +36,6 @@ def import_modules(module_names: List[str]) -> None:
         import_submodules(module_name)
 
 
-def indent(s: str, level: int = 1) -> str:
-    tabs = "\t" * level
-    return tabs + s.replace("\n", f"\n{tabs}")
-
-
 def update_field(
     obj: Union[Dict[Union[int, str], Any], List[Any]],
     field: Union[int, str, Sequence[Union[int, str]]],
