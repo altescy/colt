@@ -220,8 +220,8 @@ class ColtBuilder:
         if annotation == Any:
             annotation = None
 
-        if annotation is not None and isinstance(config, Placeholder):
-            if not config.match_type_hint(annotation):
+        if isinstance(config, Placeholder):
+            if annotation is not None and not config.match_type_hint(annotation):
                 raise ConfigurationError(
                     f"[{param_name}] Placeholder type mismatch: "
                     f"expected {annotation}, got {config.type_hint}"
