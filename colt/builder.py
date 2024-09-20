@@ -1,5 +1,6 @@
 import io
 import sys
+import textwrap
 import traceback
 import typing
 import warnings
@@ -36,7 +37,6 @@ from colt.error import ConfigurationError
 from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
-from colt.utils import indent
 
 T = TypeVar("T")
 
@@ -368,7 +368,7 @@ class ColtBuilder:
             ]
             raise ConfigurationError(
                 "\n\n"
-                + "\n".join(indent(msg) for msg in trial_messages)
+                + "\n".join(textwrap.indent(msg, "  ") for msg in trial_messages)
                 + f"\n[{param_name}] Failed to construct object with type {annotation}"
             )
 
