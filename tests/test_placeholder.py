@@ -35,3 +35,11 @@ def test_build_with_placeholder_with_error() -> None:
 
     with pytest.raises(ConfigurationError):
         colt.dry_run(config, Bar)
+
+
+def test_placeholder_without_annotation() -> None:
+    class Foo:
+        def __init__(self, value) -> None:  # type: ignore[no-untyped-def]
+            self.value = value
+
+    colt.dry_run({"foo": Placeholder(Foo)}, Foo)
