@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import pytest
 
@@ -51,6 +51,10 @@ def test_update_field(
         (Tuple[int, ...], Tuple[str, ...], False),
         (Tuple[int, ...], Tuple[Any, ...], True),
         (Tuple[int, ...], Sequence[int], True),
+        (int, Optional[int], True),
+        (Optional[int], int, False),
+        (Union[int, str], Union[int, str, List[str]], True),
+        (Union[int, str, List[str]], Union[int, str], False),
     ],
 )
 def test_issubtype(a: Any, b: Any, expected: bool) -> None:

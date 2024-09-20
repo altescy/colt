@@ -76,7 +76,7 @@ def update_field(
             raise ValueError("obj must be dict or list")
 
 
-def reveal_origin(a: Any) -> Optional[type]:
+def reveal_origin(a: Any) -> Optional[Any]:
     if isinstance(a, type):
         return a
     return typing.get_origin(a)
@@ -95,6 +95,11 @@ def issubtype(a: Any, b: Any) -> bool:
 
     if a_origin is None or b_origin is None:
         raise ValueError(f"a and b must be type hint, but got {a} and {b}")
+
+    if a_origin == typing.Union:
+        return all(issubtype(a_arg, b) for a_arg in a_args)
+    if b_origin == typing.Union:
+        return any(issubtype(a, b_arg) for b_arg in b_args)
 
     if a_origin is b_origin or issubclass(a_origin, b_origin):
         if a_args == b_args:
