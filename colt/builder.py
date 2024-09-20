@@ -34,6 +34,7 @@ else:
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
 from colt.lazy import Lazy
+from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.utils import indent
 
@@ -218,6 +219,14 @@ class ColtBuilder:
 
         if annotation == Any:
             annotation = None
+
+        if annotation is not None and isinstance(config, Placeholder):
+            if not config.match_type_hint(annotation):
+                raise ConfigurationError(
+                    f"[{param_name}] Placeholder type mismatch: "
+                    f"expected {annotation}, got {config.type_hint}"
+                )
+            return config
 
         if self._strict and annotation is None:
             warnings.warn(

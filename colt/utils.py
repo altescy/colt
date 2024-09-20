@@ -1,7 +1,8 @@
 import importlib
 import pkgutil
 import sys
-from typing import Any, Dict, List, Sequence, Union
+import typing
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 
 def import_submodules(package_name: str) -> None:
@@ -73,3 +74,50 @@ def update_field(
             update_field(obj[target_field], path[1:], value)
         else:
             raise ValueError("obj must be dict or list")
+
+
+def reveal_origin(a: Any) -> Optional[Any]:
+    if isinstance(a, type):
+        return a
+    return typing.get_origin(a)
+
+
+def issubtype(a: Any, b: Any) -> bool:
+    if b == Any:
+        return True
+    if a == b == Ellipsis:
+        return True
+
+    a_origin = reveal_origin(a)
+    b_origin = reveal_origin(b)
+    a_args = typing.get_args(a)
+    b_args = typing.get_args(b)
+
+    if a_origin is None or b_origin is None:
+        raise ValueError(f"a and b must be type hint, but got {a} and {b}")
+
+    if a_origin == typing.Union:
+        return all(issubtype(a_arg, b) for a_arg in a_args)
+    if b_origin == typing.Union:
+        return any(issubtype(a, b_arg) for b_arg in b_args)
+
+    if a_origin is b_origin or issubclass(a_origin, b_origin):
+        if a_args == b_args:
+            return True
+        if b_args == ():
+            return True
+        if (
+            issubclass(a_origin, tuple)
+            and len(a_args) == 2
+            and a_args[1] == Ellipsis
+            and issubclass(b_origin, Sequence)
+            and len(b_args) == 1
+        ):
+            return issubtype(a_args[0], b_args[0])
+        if len(a_args) != len(b_args):
+            return False
+        if a_args and b_args:
+            if all(issubtype(x, y) for x, y in zip(a_args, b_args)):
+                return True
+
+    return False
