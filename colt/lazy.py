@@ -15,7 +15,7 @@ from typing import (
 from colt.utils import update_field
 
 if typing.TYPE_CHECKING:
-    from colt.builder import ColtBuilder
+    from colt.builder import ColtBuilder, ParamPath
 
 T = TypeVar("T")
 
@@ -24,7 +24,7 @@ class Lazy(Generic[T]):
     def __init__(
         self,
         config: Any,
-        param_name: str = "",
+        path: "ParamPath" = (),
         cls: Optional[Type[T]] = None,
         builder: Optional["ColtBuilder"] = None,
     ) -> None:
@@ -32,10 +32,10 @@ class Lazy(Generic[T]):
 
         self._cls = cls
         self._config = config or {}
-        self._param_name = param_name
+        self._path = path
         self._builder = builder or ColtBuilder()
 
-        self._builder.dry_run(self._config, self._cls, param_name=self._param_name)
+        self._builder.dry_run(self._config, self._cls, path=self._path)
 
     @property
     def config(self) -> Any:
@@ -44,7 +44,7 @@ class Lazy(Generic[T]):
     @property
     def constructor(self) -> Optional[Union[Type[T], Callable[..., T]]]:
         return (
-            self._builder._get_constructor(self._config, self._param_name, self._cls)
+            self._builder._get_constructor(self._config, self._path, self._cls)
             or self._cls
         )
 
@@ -58,7 +58,7 @@ class Lazy(Generic[T]):
                 update_field(self._config, field, value)
         for k, v in kwargs.items():
             update_field(self._config, k, v)
-        self._builder.dry_run(self._config, self._cls, param_name=self._param_name)
+        self._builder.dry_run(self._config, self._cls, path=self._path)
 
     def construct(
         self,
@@ -74,4 +74,4 @@ class Lazy(Generic[T]):
                 update_field(config, k, v)
         else:
             config = self._config
-        return self._builder._build(config, self._param_name, self._cls)
+        return self._builder._build(config, self._path, self._cls)

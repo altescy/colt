@@ -5,6 +5,7 @@ import traceback
 import typing
 import warnings
 from collections import abc
+from contextlib import suppress
 from typing import (
     Any,
     Callable,
@@ -32,13 +33,20 @@ else:
     class UnionType: ...
 
 
+from colt.callback import ColtCallback, MultiCallback, SkipCallback
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
 from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
+from colt.utils import remove_optional
 
 T = TypeVar("T")
+ParamPath = Tuple[Union[int, str], ...]
+
+
+def _get_path_name(path: ParamPath) -> str:
+    return ".".join(str(x) for x in path)
 
 
 class ColtBuilder:
@@ -50,10 +58,31 @@ class ColtBuilder:
         typekey: Optional[str] = None,
         argskey: Optional[str] = None,
         strict: bool = False,
+        callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = None,
     ) -> None:
+        if isinstance(callback, abc.Sequence):
+            callback = MultiCallback(*callback)
+
         self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
         self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
         self._strict = strict
+        self._callback = callback
+
+    @property
+    def typekey(self) -> str:
+        return self._typekey
+
+    @property
+    def argskey(self) -> str:
+        return self._argskey
+
+    @property
+    def strict(self) -> bool:
+        return self._strict
+
+    @property
+    def callback(self) -> Optional[ColtCallback]:
+        return self._callback
 
     @overload
     def __call__(self, config: Any) -> Any: ...
@@ -72,29 +101,27 @@ class ColtBuilder:
         config: Any,
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
     ) -> Union[T, Any]:
-        return self._build(config, "", cls)
+        if self._callback is not None:
+            with suppress(SkipCallback):
+                config = self._callback.on_start(self, config, cls)
+        return self._build(config, (), cls)
 
     def dry_run(
         self,
         config: Any,
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
         *,
-        param_name: str = "",
+        path: ParamPath = (),
     ) -> Union[T, Any]:
-        return self._build(config, param_name, cls, skip_construction=True)
-
-    @staticmethod
-    def _remove_optional(annotation: type) -> type:
-        origin = typing.get_origin(annotation)
-        args = typing.get_args(annotation)
-        if origin == Union and len(args) == 2 and args[1] == type(None):  # noqa: E721
-            return cast(type, args[0])
-        return annotation
+        if self._callback is not None:
+            with suppress(SkipCallback):
+                config = self._callback.on_start(self, config, cls)
+        return self._build(config, path, cls, skip_construction=True)
 
     @staticmethod
     def _get_constructor_by_name(
         name: str,
-        param_name: str,
+        path: ParamPath,
         annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         allow_to_import: bool = True,
     ) -> Union[Type[T], Callable[..., T]]:
@@ -112,7 +139,9 @@ class ColtBuilder:
         else:
             constructor = cast(Type[T], DefaultRegistry.by_name(name, allow_to_import))
         if constructor is None:
-            raise ConfigurationError(f"[{param_name}] type not found error: {name}")
+            raise ConfigurationError(
+                f"[{ColtBuilder._get_path_name(path)}] type not found error: {name}"
+            )
         return constructor
 
     @staticmethod
@@ -135,7 +164,7 @@ class ColtBuilder:
     def _get_constructor(
         self,
         config: Any,
-        param_name: str,
+        path: ParamPath,
         annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
     ) -> Optional[Union[Type[T], Callable[..., T]]]:
         if not isinstance(config, Mapping):
@@ -147,7 +176,7 @@ class ColtBuilder:
             return None
         return self._get_constructor_by_name(
             name,
-            param_name,
+            path,
             annotation,
             allow_to_import=not self._strict,
         )
@@ -156,7 +185,7 @@ class ColtBuilder:
         self,
         constructor: Callable[..., T],
         config: Mapping[str, Any],
-        param_name: str,
+        path: ParamPath,
         skip_construction: bool = False,
     ) -> Tuple[List[Any], Dict[str, Any]]:
         if not config:
@@ -169,12 +198,12 @@ class ColtBuilder:
 
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError(
-                f"[{param_name}] Arguments must be a list or tuple."
+                f"[{_get_path_name(path)}] Arguments must be a list or tuple."
             )
         args: List[Any] = [
             self._build(
                 val,
-                self._catname(param_name, self._argskey, i),
+                path + (self._argskey, i),
                 skip_construction=skip_construction,
             )
             for i, val in enumerate(args_config)
@@ -196,7 +225,7 @@ class ColtBuilder:
         kwargs: Dict[str, Any] = {
             key: self._build(
                 val,
-                self._catname(param_name, key),
+                path + (key,),
                 type_hints.get(key),
                 skip_construction=skip_construction,
             )
@@ -208,14 +237,18 @@ class ColtBuilder:
     def _build(
         self,
         config: Any,
-        param_name: str,
+        path: ParamPath,
         annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         *,
         raise_configuration_error: bool = True,
         skip_construction: bool = False,
     ) -> Union[T, Any]:
+        if self._callback is not None:
+            with suppress(SkipCallback):
+                return self._callback.on_build(self, config, path, annotation)
+
         if annotation is not None and isinstance(annotation, type):
-            annotation = self._remove_optional(annotation)
+            annotation = remove_optional(annotation)
 
         if annotation == Any:
             annotation = None
@@ -223,14 +256,14 @@ class ColtBuilder:
         if isinstance(config, Placeholder):
             if annotation is not None and not config.match_type_hint(annotation):
                 raise ConfigurationError(
-                    f"[{param_name}] Placeholder type mismatch: "
+                    f"[{_get_path_name(path)}] Placeholder type mismatch: "
                     f"expected {annotation}, got {config.type_hint}"
                 )
             return config
 
         if self._strict and annotation is None:
             warnings.warn(
-                f"[{param_name}] Given config is not constructed because currently "
+                f"[{_get_path_name(path)}] Given config is not constructed because currently "
                 "strict mode is enabled and the type annotation is not given.",
                 UserWarning,
             )
@@ -247,7 +280,7 @@ class ColtBuilder:
             return list(
                 self._build(
                     x,
-                    self._catname(param_name, i),
+                    path + (i,),
                     value_cls,
                     skip_construction=skip_construction,
                 )
@@ -259,7 +292,7 @@ class ColtBuilder:
             return set(
                 self._build(
                     x,
-                    self._catname(param_name, i),
+                    path + (i,),
                     value_cls,
                     skip_construction=skip_construction,
                 )
@@ -271,7 +304,7 @@ class ColtBuilder:
                 return tuple(
                     self._build(
                         x,
-                        self._catname(param_name, i),
+                        path + (i,),
                         skip_construction=skip_construction,
                     )
                     for i, x in enumerate(config)
@@ -281,7 +314,7 @@ class ColtBuilder:
                 return tuple(
                     self._build(
                         x,
-                        self._catname(param_name, i),
+                        path + (i,),
                         args[0],
                         skip_construction=skip_construction,
                     )
@@ -290,12 +323,12 @@ class ColtBuilder:
 
             if isinstance(config, abc.Sized) and len(config) != len(args):
                 raise ConfigurationError(
-                    f"[{param_name}] Tuple sizes of the given config and annotation "
+                    f"[{_get_path_name(path)}] Tuple sizes of the given config and annotation "
                     f"are mismatched: {config} / {args}"
                 )
 
             return tuple(
-                self._build(value_config, self._catname(param_name, i), value_cls)
+                self._build(value_config, path + (i,), value_cls)
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
@@ -305,12 +338,12 @@ class ColtBuilder:
             return {
                 self._build(
                     key_config,
-                    self._catname(param_name, f"[key:{i}]"),
+                    path + (f"[key:{i}]",),
                     key_cls,
                     skip_construction=skip_construction,
                 ): self._build(
                     value_config,
-                    self._catname(param_name, key_config),
+                    path + (key_config,),
                     value_cls,
                     skip_construction=skip_construction,
                 )
@@ -320,7 +353,7 @@ class ColtBuilder:
         if origin == Literal:
             if config not in args:
                 raise ConfigurationError(
-                    f"[{param_name}] {config} is not a valid literal value."
+                    f"[{_get_path_name(path)}] {config} is not a valid literal value."
                 )
             return config
 
@@ -329,7 +362,7 @@ class ColtBuilder:
             kwargs = {
                 key: self._build(
                     value_config,
-                    self._catname(param_name, key),
+                    path + (key,),
                     type_hints.get(key),
                     skip_construction=skip_construction,
                 )
@@ -341,16 +374,14 @@ class ColtBuilder:
 
         if origin in (Union, UnionType):
             if not args:
-                return self._build(
-                    config, param_name, skip_construction=skip_construction
-                )
+                return self._build(config, path, skip_construction=skip_construction)
 
             trial_exceptions: List[Tuple[Any, Exception, str]] = []
             for value_cls in args:
                 try:
                     return self._build(
                         config,
-                        param_name,
+                        path,
                         value_cls,
                         raise_configuration_error=False,
                         skip_construction=skip_construction,
@@ -363,28 +394,28 @@ class ColtBuilder:
                     continue
 
             trial_messages = [
-                f"[{param_name}] Trying to construct {annotation} with type {cls}:\n{e}\n{tb}"
+                f"[{_get_path_name(path)}] Trying to construct {annotation} with type {cls}:\n{e}\n{tb}"
                 for cls, e, tb in trial_exceptions
             ]
             raise ConfigurationError(
                 "\n\n"
                 + "\n".join(textwrap.indent(msg, "  ") for msg in trial_messages)
-                + f"\n[{param_name}] Failed to construct object with type {annotation}"
+                + f"\n[{_get_path_name(path)}] Failed to construct object with type {annotation}"
             )
 
         if origin == Lazy:
             value_cls = args[0] if args else None
-            return Lazy(config, param_name, value_cls, self)
+            return Lazy(config, path, value_cls, self)
 
         if isinstance(config, (list, set, tuple)):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
-                    f"[{param_name}] Type mismatch, expected type is "
+                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
             if isinstance(annotation, type) and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"[{param_name}] Type mismatch, expected type is "
+                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
                 )
             cls = type(config)
@@ -392,7 +423,7 @@ class ColtBuilder:
             return cls(
                 self._build(
                     x,
-                    self._catname(param_name, i),
+                    path + (i,),
                     value_cls,
                     skip_construction=skip_construction,
                 )
@@ -402,12 +433,12 @@ class ColtBuilder:
         if not isinstance(config, abc.Mapping):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
-                    f"[{param_name}] Type mismatch, expected type is "
+                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
             if isinstance(annotation, type) and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"[{param_name}] Type mismatch, expected type is "
+                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
                 )
             return config
@@ -416,7 +447,7 @@ class ColtBuilder:
             return {
                 key: self._build(
                     val,
-                    self._catname(param_name, key),
+                    path + (key,),
                     skip_construction=skip_construction,
                 )
                 for key, val in config.items()
@@ -426,7 +457,7 @@ class ColtBuilder:
             config = dict(config)
             class_name = config.pop(self._typekey)
             constructor = self._get_constructor_by_name(
-                class_name, param_name, annotation, allow_to_import=not self._strict
+                class_name, path, annotation, allow_to_import=not self._strict
             )
         else:
             constructor = origin or annotation  # type: ignore
@@ -438,12 +469,12 @@ class ColtBuilder:
             and not issubclass(constructor, annotation)
         ):
             raise ConfigurationError(
-                f"[{param_name}] Type mismatch, expected type is "
+                f"[{_get_path_name(path)}] Type mismatch, expected type is "
                 f"{annotation}, but actual type is {constructor}."
             )
 
         args_for_constructor, kwargs_for_constructor = self._construct_args(
-            constructor, config, param_name, skip_construction=skip_construction
+            constructor, config, path, skip_construction=skip_construction
         )
 
         if skip_construction:
@@ -454,7 +485,7 @@ class ColtBuilder:
         except Exception as e:
             if raise_configuration_error:
                 raise ConfigurationError(
-                    f"[{param_name}] Failed to construct object with constructor {constructor}."
+                    f"[{_get_path_name(path)}] Failed to construct object with constructor {constructor}."
                 ) from e
             else:
                 raise

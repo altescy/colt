@@ -2,7 +2,7 @@ import importlib
 import pkgutil
 import sys
 import typing
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 
 def import_submodules(package_name: str) -> None:
@@ -69,6 +69,14 @@ def update_field(
             update_field(obj[target_field], path[1:], value)
         else:
             raise ValueError("obj must be dict or list")
+
+
+def remove_optional(annotation: type) -> type:
+    origin = typing.get_origin(annotation)
+    args = typing.get_args(annotation)
+    if origin == Union and len(args) == 2 and args[1] == type(None):  # noqa: E721
+        return cast(type, args[0])
+    return annotation
 
 
 def reveal_origin(a: Any) -> Optional[Any]:
