@@ -45,6 +45,7 @@ def build(
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
     strict: bool = ...,
+    callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = ...,
 ) -> T: ...
 
 
@@ -56,6 +57,7 @@ def build(
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
     strict: bool = ...,
+    callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = ...,
 ) -> T: ...
 
 
@@ -67,6 +69,7 @@ def build(
     typekey: Optional[str] = ...,
     argskey: Optional[str] = ...,
     strict: bool = ...,
+    callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = ...,
 ) -> Any: ...
 
 
