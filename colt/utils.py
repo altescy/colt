@@ -77,7 +77,7 @@ def update_field(
             raise ValueError("obj must be dict or list")
 
 
-def remove_optional(annotation: type) -> type:
+def remove_optional(annotation: Any) -> Any:
     origin = typing.get_origin(annotation)
     args = typing.get_args(annotation)
     if origin == Union and len(args) == 2 and args[1] == type(None):  # noqa: E721

@@ -118,7 +118,7 @@ class ColtBuilder:
     def _get_constructor_by_name(
         name: str,
         path: ParamPath,
-        annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
+        annotation: Optional[Union[Type[T], Callable[..., T], Any]] = None,
         allow_to_import: bool = True,
     ) -> Union[Type[T], Callable[..., T]]:
         origin: Any
@@ -211,7 +211,7 @@ class ColtBuilder:
                     getattr(constructor, "__init__"),  # noqa: B009
                 )
             except NameError:
-                type_hints = constructor.__init__.__annotations__
+                type_hints = constructor.__init__.__annotations__  # type: ignore[misc]
         else:
             try:
                 type_hints = get_type_hints(constructor)
@@ -234,7 +234,7 @@ class ColtBuilder:
         self,
         config: Any,
         path: ParamPath,
-        annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
+        annotation: Optional[Union[Type[T], Callable[..., T], Any]] = None,
         *,
         raise_configuration_error: bool = True,
         skip_construction: bool = False,
@@ -452,8 +452,10 @@ class ColtBuilder:
         if self._typekey in config:
             config = dict(config)
             class_name = config.pop(self._typekey)
-            constructor = self._get_constructor_by_name(
-                class_name, path, annotation, allow_to_import=not self._strict
+            constructor: Union[Type[T], Callable[..., T]] = (
+                self._get_constructor_by_name(
+                    class_name, path, annotation, allow_to_import=not self._strict
+                )
             )
         else:
             constructor = origin or annotation  # type: ignore
