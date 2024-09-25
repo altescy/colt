@@ -39,14 +39,10 @@ from colt.error import ConfigurationError
 from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
-from colt.utils import remove_optional
+from colt.types import ParamPath
+from colt.utils import get_path_name, remove_optional
 
 T = TypeVar("T")
-ParamPath = Tuple[Union[int, str], ...]
-
-
-def _get_path_name(path: ParamPath) -> str:
-    return ".".join(str(x) for x in path)
 
 
 class ColtBuilder:
@@ -140,7 +136,7 @@ class ColtBuilder:
             constructor = cast(Type[T], DefaultRegistry.by_name(name, allow_to_import))
         if constructor is None:
             raise ConfigurationError(
-                f"[{ColtBuilder._get_path_name(path)}] type not found error: {name}"
+                f"[{ColtBuilder.get_path_name(path)}] type not found error: {name}"
             )
         return constructor
 
@@ -198,7 +194,7 @@ class ColtBuilder:
 
         if not isinstance(args_config, (list, tuple)):
             raise ConfigurationError(
-                f"[{_get_path_name(path)}] Arguments must be a list or tuple."
+                f"[{get_path_name(path)}] Arguments must be a list or tuple."
             )
         args: List[Any] = [
             self._build(
@@ -245,7 +241,7 @@ class ColtBuilder:
     ) -> Union[T, Any]:
         if self._callback is not None:
             with suppress(SkipCallback):
-                return self._callback.on_build(self, config, path, annotation)
+                config = self._callback.on_build(self, config, path, annotation)
 
         if annotation is not None and isinstance(annotation, type):
             annotation = remove_optional(annotation)
@@ -256,14 +252,14 @@ class ColtBuilder:
         if isinstance(config, Placeholder):
             if annotation is not None and not config.match_type_hint(annotation):
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Placeholder type mismatch: "
+                    f"[{get_path_name(path)}] Placeholder type mismatch: "
                     f"expected {annotation}, got {config.type_hint}"
                 )
             return config
 
         if self._strict and annotation is None:
             warnings.warn(
-                f"[{_get_path_name(path)}] Given config is not constructed because currently "
+                f"[{get_path_name(path)}] Given config is not constructed because currently "
                 "strict mode is enabled and the type annotation is not given.",
                 UserWarning,
             )
@@ -323,7 +319,7 @@ class ColtBuilder:
 
             if isinstance(config, abc.Sized) and len(config) != len(args):
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Tuple sizes of the given config and annotation "
+                    f"[{get_path_name(path)}] Tuple sizes of the given config and annotation "
                     f"are mismatched: {config} / {args}"
                 )
 
@@ -353,7 +349,7 @@ class ColtBuilder:
         if origin == Literal:
             if config not in args:
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] {config} is not a valid literal value."
+                    f"[{get_path_name(path)}] {config} is not a valid literal value."
                 )
             return config
 
@@ -394,13 +390,13 @@ class ColtBuilder:
                     continue
 
             trial_messages = [
-                f"[{_get_path_name(path)}] Trying to construct {annotation} with type {cls}:\n{e}\n{tb}"
+                f"[{get_path_name(path)}] Trying to construct {annotation} with type {cls}:\n{e}\n{tb}"
                 for cls, e, tb in trial_exceptions
             ]
             raise ConfigurationError(
                 "\n\n"
                 + "\n".join(textwrap.indent(msg, "  ") for msg in trial_messages)
-                + f"\n[{_get_path_name(path)}] Failed to construct object with type {annotation}"
+                + f"\n[{get_path_name(path)}] Failed to construct object with type {annotation}"
             )
 
         if origin == Lazy:
@@ -410,12 +406,12 @@ class ColtBuilder:
         if isinstance(config, (list, set, tuple)):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
+                    f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
             if isinstance(annotation, type) and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
+                    f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
                 )
             cls = type(config)
@@ -433,12 +429,12 @@ class ColtBuilder:
         if not isinstance(config, abc.Mapping):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
+                    f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
             if isinstance(annotation, type) and not isinstance(config, annotation):
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Type mismatch, expected type is "
+                    f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
                 )
             return config
@@ -469,7 +465,7 @@ class ColtBuilder:
             and not issubclass(constructor, annotation)
         ):
             raise ConfigurationError(
-                f"[{_get_path_name(path)}] Type mismatch, expected type is "
+                f"[{get_path_name(path)}] Type mismatch, expected type is "
                 f"{annotation}, but actual type is {constructor}."
             )
 
@@ -485,7 +481,7 @@ class ColtBuilder:
         except Exception as e:
             if raise_configuration_error:
                 raise ConfigurationError(
-                    f"[{_get_path_name(path)}] Failed to construct object with constructor {constructor}."
+                    f"[{get_path_name(path)}] Failed to construct object with constructor {constructor}."
                 ) from e
             else:
                 raise
