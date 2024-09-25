@@ -4,6 +4,8 @@ import sys
 import typing
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
+from colt.types import ParamPath
+
 
 def import_submodules(package_name: str) -> None:
     """
@@ -34,6 +36,10 @@ def import_modules(module_names: List[str]) -> None:
     """
     for module_name in module_names:
         import_submodules(module_name)
+
+
+def get_path_name(path: ParamPath) -> str:
+    return ".".join(str(x) for x in path)
 
 
 def update_field(
