@@ -42,6 +42,14 @@ class Lazy(Generic[T]):
         return self._config
 
     @property
+    def path(self) -> ParamPath:
+        return self._path
+
+    @property
+    def builder(self) -> "ColtBuilder":
+        return self._builder
+
+    @property
     def constructor(self) -> Optional[Union[Type[T], Callable[..., T]]]:
         return (
             self._builder._get_constructor(self._config, self._path, self._cls)
