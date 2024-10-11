@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Callable, List, Mapping, Optional, Type, TypeVar, Union
+from typing import Any, Callable, List, Optional, Type, TypeVar, Union
 
 from colt import ColtBuilder, ColtCallback, ColtContext, Lazy
 from colt.types import ParamPath
