@@ -1,7 +1,8 @@
 import dataclasses
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 
-from colt import ColtBuilder, ColtCallback, SkipCallback
+from colt import ColtBuilder, ColtCallback, ColtContext, SkipCallback
+from colt.types import ParamPath
 
 T = TypeVar("T")
 
@@ -15,11 +16,12 @@ def test_callback_on_start() -> None:
     class AddName(ColtCallback):
         def on_start(
             self,
-            builder: "ColtBuilder",
             config: Any,
-            cls: Optional[Union[Type[T], Callable[..., T]]] = None,
+            builder: "ColtBuilder",
+            context: "ColtContext",
+            annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         ) -> Any:
-            if cls is Foo and isinstance(config, dict) and "name" not in config:
+            if annotation is Foo and isinstance(config, dict) and "name" not in config:
                 return {**config, "name": "foo"}
             raise SkipCallback
 
@@ -42,9 +44,10 @@ def test_callback_on_build() -> None:
     class AddOne(ColtCallback):
         def on_build(
             self,
-            builder: ColtBuilder,
+            path: "ParamPath",
             config: Any,
-            path: Tuple[Union[int, str], ...],
+            builder: "ColtBuilder",
+            context: "ColtContext",
             annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         ) -> Any:
             del builder, path

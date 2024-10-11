@@ -34,6 +34,7 @@ else:
 
 
 from colt.callback import ColtCallback, MultiCallback, SkipCallback
+from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
 from colt.lazy import Lazy
@@ -97,10 +98,11 @@ class ColtBuilder:
         config: Any,
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
     ) -> Union[T, Any]:
+        context = ColtContext(config=config)
         if self._callback is not None:
             with suppress(SkipCallback):
-                config = self._callback.on_start(self, config, cls)
-        return self._build(config, (), cls)
+                config = self._callback.on_start(config, self, context, cls)
+        return self._build(config, (), cls, context=context)
 
     def dry_run(
         self,
@@ -108,11 +110,13 @@ class ColtBuilder:
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
         *,
         path: ParamPath = (),
+        context: Optional[ColtContext] = None,
     ) -> Union[T, Any]:
+        context = context or ColtContext(config=config)
         if self._callback is not None:
             with suppress(SkipCallback):
-                config = self._callback.on_start(self, config, cls)
-        return self._build(config, path, cls, skip_construction=True)
+                config = self._callback.on_start(config, self, context, cls)
+        return self._build(config, path, cls, context=context, skip_construction=True)
 
     @staticmethod
     def _get_constructor_by_name(
@@ -152,11 +156,6 @@ class ColtBuilder:
             return False
         return all(type(name) is str for name in fields)
 
-    @staticmethod
-    def _catname(parent: str, *keys: Union[int, str]) -> str:
-        key = ".".join(str(x) for x in keys)
-        return f"{parent}.{key}" if parent else key
-
     def _get_constructor(
         self,
         config: Any,
@@ -182,6 +181,8 @@ class ColtBuilder:
         constructor: Callable[..., T],
         config: Mapping[str, Any],
         path: ParamPath,
+        *,
+        context: ColtContext,
         skip_construction: bool = False,
     ) -> Tuple[List[Any], Dict[str, Any]]:
         if not config:
@@ -200,6 +201,7 @@ class ColtBuilder:
             self._build(
                 val,
                 path + (self._argskey, i),
+                context=context,
                 skip_construction=skip_construction,
             )
             for i, val in enumerate(args_config)
@@ -223,6 +225,7 @@ class ColtBuilder:
                 val,
                 path + (key,),
                 type_hints.get(key),
+                context=context,
                 skip_construction=skip_construction,
             )
             for key, val in config.items()
@@ -236,12 +239,15 @@ class ColtBuilder:
         path: ParamPath,
         annotation: Optional[Union[Type[T], Callable[..., T], Any]] = None,
         *,
+        context: ColtContext,
         raise_configuration_error: bool = True,
         skip_construction: bool = False,
     ) -> Union[T, Any]:
         if self._callback is not None:
             with suppress(SkipCallback):
-                config = self._callback.on_build(self, config, path, annotation)
+                config = self._callback.on_build(
+                    path, config, self, context, annotation
+                )
 
         if annotation is not None and isinstance(annotation, type):
             annotation = remove_optional(annotation)
@@ -278,6 +284,7 @@ class ColtBuilder:
                     x,
                     path + (i,),
                     value_cls,
+                    context=context,
                     skip_construction=skip_construction,
                 )
                 for i, x in enumerate(config)
@@ -290,6 +297,7 @@ class ColtBuilder:
                     x,
                     path + (i,),
                     value_cls,
+                    context=context,
                     skip_construction=skip_construction,
                 )
                 for i, x in enumerate(config)
@@ -301,6 +309,7 @@ class ColtBuilder:
                     self._build(
                         x,
                         path + (i,),
+                        context=context,
                         skip_construction=skip_construction,
                     )
                     for i, x in enumerate(config)
@@ -312,6 +321,7 @@ class ColtBuilder:
                         x,
                         path + (i,),
                         args[0],
+                        context=context,
                         skip_construction=skip_construction,
                     )
                     for i, x in enumerate(config)
@@ -324,7 +334,7 @@ class ColtBuilder:
                 )
 
             return tuple(
-                self._build(value_config, path + (i,), value_cls)
+                self._build(value_config, path + (i,), value_cls, context=context)
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
@@ -336,11 +346,13 @@ class ColtBuilder:
                     key_config,
                     path + (f"[key:{i}]",),
                     key_cls,
+                    context=context,
                     skip_construction=skip_construction,
                 ): self._build(
                     value_config,
                     path + (key_config,),
                     value_cls,
+                    context=context,
                     skip_construction=skip_construction,
                 )
                 for i, (key_config, value_config) in enumerate(config.items())
@@ -360,6 +372,7 @@ class ColtBuilder:
                     value_config,
                     path + (key,),
                     type_hints.get(key),
+                    context=context,
                     skip_construction=skip_construction,
                 )
                 for key, value_config in config.items()
@@ -370,7 +383,9 @@ class ColtBuilder:
 
         if origin in (Union, UnionType):
             if not args:
-                return self._build(config, path, skip_construction=skip_construction)
+                return self._build(
+                    config, path, context=context, skip_construction=skip_construction
+                )
 
             trial_exceptions: List[Tuple[Any, Exception, str]] = []
             for value_cls in args:
@@ -379,6 +394,7 @@ class ColtBuilder:
                         config,
                         path,
                         value_cls,
+                        context=context,
                         raise_configuration_error=False,
                         skip_construction=skip_construction,
                     )
@@ -401,7 +417,7 @@ class ColtBuilder:
 
         if origin == Lazy:
             value_cls = args[0] if args else None
-            return Lazy(config, path, value_cls, self)
+            return Lazy(config, path, context, value_cls, self)
 
         if isinstance(config, (list, set, tuple)):
             if origin is not None and not isinstance(config, origin):
@@ -421,6 +437,7 @@ class ColtBuilder:
                     x,
                     path + (i,),
                     value_cls,
+                    context=context,
                     skip_construction=skip_construction,
                 )
                 for i, x in enumerate(config)
@@ -444,6 +461,7 @@ class ColtBuilder:
                 key: self._build(
                     val,
                     path + (key,),
+                    context=context,
                     skip_construction=skip_construction,
                 )
                 for key, val in config.items()
@@ -472,7 +490,11 @@ class ColtBuilder:
             )
 
         args_for_constructor, kwargs_for_constructor = self._construct_args(
-            constructor, config, path, skip_construction=skip_construction
+            constructor,
+            config,
+            path,
+            context=context,
+            skip_construction=skip_construction,
         )
 
         if skip_construction:

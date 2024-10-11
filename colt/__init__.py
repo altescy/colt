@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union, over
 
 from colt.builder import ColtBuilder
 from colt.callback import ColtCallback, SkipCallback  # noqa: F401
+from colt.context import ColtContext  # noqa: F401
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError  # noqa: F401
 from colt.lazy import Lazy  # noqa: F401
