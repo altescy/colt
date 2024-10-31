@@ -16,6 +16,7 @@ from colt.utils import update_field
 
 if typing.TYPE_CHECKING:
     from colt.builder import ColtBuilder, ParamPath
+    from colt.context import ColtContext
 
 T = TypeVar("T")
 
@@ -24,7 +25,8 @@ class Lazy(Generic[T]):
     def __init__(
         self,
         config: Any,
-        path: "ParamPath" = (),
+        path: "ParamPath",
+        context: "ColtContext",
         cls: Optional[Type[T]] = None,
         builder: Optional["ColtBuilder"] = None,
     ) -> None:
@@ -33,13 +35,24 @@ class Lazy(Generic[T]):
         self._cls = cls
         self._config = config or {}
         self._path = path
+        self._context = context
         self._builder = builder or ColtBuilder()
 
-        self._builder.dry_run(self._config, self._cls, path=self._path)
+        self._builder.dry_run(
+            self._config, self._cls, path=self._path, context=self._context
+        )
 
     @property
     def config(self) -> Any:
         return self._config
+
+    @property
+    def path(self) -> "ParamPath":
+        return self._path
+
+    @property
+    def builder(self) -> "ColtBuilder":
+        return self._builder
 
     @property
     def constructor(self) -> Optional[Union[Type[T], Callable[..., T]]]:
@@ -74,4 +87,6 @@ class Lazy(Generic[T]):
                 update_field(config, k, v)
         else:
             config = self._config
-        return self._builder._build(config, self._path, self._cls)
+        return self._builder._build(
+            config, self._path, self._cls, context=self._context
+        )
