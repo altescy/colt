@@ -2,7 +2,7 @@ import importlib
 import pkgutil
 import sys
 import typing
-from typing import Any, Dict, List, Optional, Sequence, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union, cast
 
 from colt.types import ParamPath
 
@@ -28,7 +28,7 @@ def import_submodules(package_name: str) -> None:
         import_submodules(subpackage)
 
 
-def import_modules(module_names: List[str]) -> None:
+def import_modules(module_names: Iterable[str]) -> None:
     """
     This method import modules recursively.
     You should call this method to register your classes
