@@ -6,6 +6,12 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Union, cast
 
 from colt.types import ParamPath
 
+if sys.version_info >= (3, 9):
+    from types import GenericAlias
+else:
+
+    class GenericAlias: ...
+
 
 def import_submodules(package_name: str) -> None:
     """
@@ -86,7 +92,7 @@ def remove_optional(annotation: Any) -> Any:
 
 
 def reveal_origin(a: Any) -> Optional[Any]:
-    if isinstance(a, type):
+    if isinstance(a, type) and not isinstance(a, GenericAlias):
         return a
     return typing.get_origin(a)
 
