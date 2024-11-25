@@ -26,13 +26,18 @@ from typing import (
     overload,
 )
 
+if sys.version_info >= (3, 9):
+    from types import GenericAlias
+else:
+
+    class GenericAlias: ...
+
+
 if sys.version_info >= (3, 10):
-    from types import GenericAlias, UnionType
+    from types import UnionType
 else:
 
     class UnionType: ...
-
-    class GenericAlias: ...
 
 
 from colt.callback import ColtCallback, MultiCallback, SkipCallback
