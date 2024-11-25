@@ -427,7 +427,11 @@ class ColtBuilder:
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
-            if isinstance(annotation, type) and not isinstance(config, annotation):
+            if (
+                isinstance(annotation, type)
+                and not isinstance(annotation, GenericAlias)
+                and not isinstance(config, annotation)
+            ):
                 raise ConfigurationError(
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
@@ -451,7 +455,11 @@ class ColtBuilder:
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
-            if isinstance(annotation, type) and not isinstance(config, annotation):
+            if (
+                isinstance(annotation, type)
+                and not isinstance(annotation, GenericAlias)
+                and not isinstance(config, annotation)
+            ):
                 raise ConfigurationError(
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
