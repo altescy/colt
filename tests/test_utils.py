@@ -1,8 +1,14 @@
+import sys
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import pytest
 
 from colt.utils import issubtype, update_field
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Iterator
+else:
+    from typing import Iterator
 
 
 @pytest.mark.parametrize(
@@ -55,6 +61,8 @@ def test_update_field(
         (Optional[int], int, False),
         (Union[int, str], Union[int, str, List[str]], True),
         (Union[int, str, List[str]], Union[int, str], False),
+        (Iterator[int], Iterator[int], True),
+        (Iterator[int], Iterator[str], False),
     ],
 )
 def test_issubtype(a: Any, b: Any, expected: bool) -> None:
