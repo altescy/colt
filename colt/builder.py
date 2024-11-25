@@ -27,10 +27,12 @@ from typing import (
 )
 
 if sys.version_info >= (3, 10):
-    from types import UnionType
+    from types import GenericAlias, UnionType
 else:
 
     class UnionType: ...
+
+    class GenericAlias: ...
 
 
 from colt.callback import ColtCallback, MultiCallback, SkipCallback
@@ -41,7 +43,7 @@ from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import get_path_name, remove_optional
+from colt.utils import get_path_name, remove_optional, reveal_origin
 
 T = TypeVar("T")
 
@@ -129,7 +131,7 @@ class ColtBuilder:
         if isinstance(annotation, type):
             origin = annotation
         else:
-            origin = typing.get_origin(annotation) if annotation else None
+            origin = reveal_origin(annotation) if annotation else None
         if (
             origin is not None
             and isinstance(origin, type)
@@ -271,7 +273,7 @@ class ColtBuilder:
             )
             return config
 
-        origin = typing.get_origin(annotation)
+        origin = reveal_origin(annotation)
         args = typing.get_args(annotation)
 
         if config is None:
