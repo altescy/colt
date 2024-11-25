@@ -26,6 +26,13 @@ from typing import (
     overload,
 )
 
+if sys.version_info >= (3, 9):
+    from types import GenericAlias
+else:
+
+    class GenericAlias: ...
+
+
 if sys.version_info >= (3, 10):
     from types import UnionType
 else:
@@ -41,7 +48,7 @@ from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import get_path_name, remove_optional
+from colt.utils import get_path_name, remove_optional, reveal_origin
 
 T = TypeVar("T")
 
@@ -129,7 +136,7 @@ class ColtBuilder:
         if isinstance(annotation, type):
             origin = annotation
         else:
-            origin = typing.get_origin(annotation) if annotation else None
+            origin = reveal_origin(annotation) if annotation else None
         if (
             origin is not None
             and isinstance(origin, type)
@@ -271,7 +278,7 @@ class ColtBuilder:
             )
             return config
 
-        origin = typing.get_origin(annotation)
+        origin = reveal_origin(annotation)
         args = typing.get_args(annotation)
 
         if config is None:
@@ -425,7 +432,11 @@ class ColtBuilder:
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
-            if isinstance(annotation, type) and not isinstance(config, annotation):
+            if (
+                isinstance(annotation, type)
+                and not isinstance(annotation, GenericAlias)
+                and not isinstance(config, annotation)
+            ):
                 raise ConfigurationError(
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
@@ -449,7 +460,11 @@ class ColtBuilder:
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{origin}, but actual type is {type(config)}."
                 )
-            if isinstance(annotation, type) and not isinstance(config, annotation):
+            if (
+                isinstance(annotation, type)
+                and not isinstance(annotation, GenericAlias)
+                and not isinstance(config, annotation)
+            ):
                 raise ConfigurationError(
                     f"[{get_path_name(path)}] Type mismatch, expected type is "
                     f"{annotation}, but actual type is {type(config)}."
