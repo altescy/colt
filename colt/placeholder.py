@@ -14,4 +14,4 @@ class Placeholder(Generic[T]):
         return self._annotation
 
     def match_type_hint(self, annotation: Any) -> bool:
-        return issubtype(annotation, self._annotation)
+        return issubtype(self._annotation, annotation)
