@@ -48,7 +48,13 @@ from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import get_path_name, is_namedtuple, remove_optional, reveal_origin
+from colt.utils import (
+    get_path_name,
+    is_namedtuple,
+    is_typeddict,
+    remove_optional,
+    reveal_origin,
+)
 
 T = TypeVar("T")
 
@@ -204,9 +210,12 @@ class ColtBuilder:
 
         if isinstance(constructor, type):
             try:  # type: ignore[unreachable]
-                type_hints = get_type_hints(
-                    getattr(constructor, "__init__"),  # noqa: B009
-                )
+                if is_typeddict(constructor):
+                    type_hints = get_type_hints(constructor)
+                else:
+                    type_hints = get_type_hints(
+                        getattr(constructor, "__init__"),  # noqa: B009
+                    )
             except NameError:
                 type_hints = constructor.__init__.__annotations__  # type: ignore[misc]
         else:
@@ -485,6 +494,7 @@ class ColtBuilder:
             annotation is not None
             and isinstance(constructor, type)
             and isinstance(annotation, type)
+            and not is_typeddict(constructor)
             and not issubclass(constructor, annotation)
         ):
             raise ConfigurationError(
