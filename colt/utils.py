@@ -149,3 +149,11 @@ def is_namedtuple(obj: Any) -> bool:
     if not isinstance(fields, tuple):
         return False
     return all(type(name) is str for name in fields)
+
+
+def is_typeddict(cls: Any) -> bool:
+    if not isinstance(cls, type):
+        return False
+    if not issubclass(cls, dict):
+        return False
+    return typing.get_type_hints(cls) is not None
