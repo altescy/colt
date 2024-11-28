@@ -1,9 +1,10 @@
 import sys
+from collections import namedtuple
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import pytest
 
-from colt.utils import issubtype, update_field
+from colt.utils import is_namedtuple, issubtype, update_field
 
 if sys.version_info >= (3, 9):
     from collections.abc import Iterator
@@ -67,3 +68,16 @@ def test_update_field(
 )
 def test_issubtype(a: Any, b: Any, expected: bool) -> None:
     assert issubtype(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    "cls, expected",
+    [
+        (namedtuple("Point", ["x", "y"]), True),
+        (namedtuple("Point", ["x", "y"])(x=1, y=2), True),  # type: ignore[call-arg]
+        (str, False),
+        ("hoge", False),
+    ],
+)
+def test_is_named_tuple(cls: Any, expected: bool) -> None:
+    assert is_namedtuple(cls) == expected

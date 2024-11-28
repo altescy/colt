@@ -48,7 +48,7 @@ from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import get_path_name, remove_optional, reveal_origin
+from colt.utils import get_path_name, is_namedtuple, remove_optional, reveal_origin
 
 T = TypeVar("T")
 
@@ -150,18 +150,6 @@ class ColtBuilder:
                 f"[{ColtBuilder.get_path_name(path)}] type not found error: {name}"
             )
         return constructor
-
-    @staticmethod
-    def _is_namedtuple(cls: Any) -> bool:
-        if not isinstance(cls, type):
-            return False
-        bases = getattr(cls, "__bases__", [])
-        if len(bases) != 1 or bases[0] != tuple:
-            return False
-        fields = getattr(cls, "_fields", None)
-        if not isinstance(fields, tuple):
-            return False
-        return all(type(name) is str for name in fields)
 
     def _get_constructor(
         self,
@@ -372,7 +360,7 @@ class ColtBuilder:
                 )
             return config
 
-        if annotation and self._is_namedtuple(annotation):
+        if annotation and is_namedtuple(annotation):
             type_hints = get_type_hints(annotation)
             kwargs = {
                 key: self._build(
