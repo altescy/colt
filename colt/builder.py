@@ -40,6 +40,11 @@ else:
     class UnionType: ...
 
 
+if sys.version_info >= (3, 11):
+    from enum import EnumType
+else:
+    from enum import EnumMeta as EnumType
+
 from colt.callback import ColtCallback, MultiCallback, SkipCallback
 from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
@@ -384,6 +389,17 @@ class ColtBuilder:
             if skip_construction:
                 return None
             return annotation(**kwargs)
+
+        if annotation and isinstance(annotation, EnumType):
+            try:
+                return annotation(config)
+            except ValueError as e:
+                if raise_configuration_error:
+                    raise ConfigurationError(
+                        f"[{get_path_name(path)}] Failed to construct object with type {annotation}."
+                    ) from e
+                else:
+                    raise
 
         if origin in (Union, UnionType):
             if not args:

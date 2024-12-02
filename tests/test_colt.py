@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import (
     Any,
     Callable,
@@ -361,3 +362,19 @@ def test_build_typed_dict() -> None:
     assert all(isinstance(foo, Foo) for foo in obj["foos"])
     assert obj["foos"][0].x == "hello"
     assert obj["foos"][1].x == "world"
+
+
+def test_build_enum() -> None:
+    class MyEnum(Enum):
+        FOO = "foo"
+        BAR = "bar"
+
+    class Foo:
+        def __init__(self, x: Optional[MyEnum]) -> None:
+            self.x = x
+
+    config = {"x": "foo"}
+    obj = colt.build(config, Foo)
+
+    assert isinstance(obj, Foo)
+    assert obj.x == MyEnum.FOO
