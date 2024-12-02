@@ -15,6 +15,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TypedDict,
     Union,
 )
 
@@ -339,3 +340,24 @@ def test_build_with_callable() -> None:
 
     assert isinstance(obj, Foo)
     assert obj.x == "hello"
+
+
+def test_build_typed_dict() -> None:
+    @dataclasses.dataclass
+    class Foo:
+        x: str
+
+    class Bar(TypedDict):
+        foos: List[Foo]
+
+    config = {
+        "foos": [{"x": "hello"}, {"x": "world"}],
+    }
+
+    obj = colt.build(config, Bar)
+
+    assert isinstance(obj, dict)
+    assert isinstance(obj["foos"], list)
+    assert all(isinstance(foo, Foo) for foo in obj["foos"])
+    assert obj["foos"][0].x == "hello"
+    assert obj["foos"][1].x == "world"

@@ -48,7 +48,13 @@ from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import get_path_name, remove_optional, reveal_origin
+from colt.utils import (
+    get_path_name,
+    is_namedtuple,
+    is_typeddict,
+    remove_optional,
+    reveal_origin,
+)
 
 T = TypeVar("T")
 
@@ -151,18 +157,6 @@ class ColtBuilder:
             )
         return constructor
 
-    @staticmethod
-    def _is_namedtuple(cls: Any) -> bool:
-        if not isinstance(cls, type):
-            return False
-        bases = getattr(cls, "__bases__", [])
-        if len(bases) != 1 or bases[0] != tuple:
-            return False
-        fields = getattr(cls, "_fields", None)
-        if not isinstance(fields, tuple):
-            return False
-        return all(type(name) is str for name in fields)
-
     def _get_constructor(
         self,
         config: Any,
@@ -216,9 +210,12 @@ class ColtBuilder:
 
         if isinstance(constructor, type):
             try:  # type: ignore[unreachable]
-                type_hints = get_type_hints(
-                    getattr(constructor, "__init__"),  # noqa: B009
-                )
+                if is_typeddict(constructor):
+                    type_hints = get_type_hints(constructor)
+                else:
+                    type_hints = get_type_hints(
+                        getattr(constructor, "__init__"),  # noqa: B009
+                    )
             except NameError:
                 type_hints = constructor.__init__.__annotations__  # type: ignore[misc]
         else:
@@ -372,7 +369,7 @@ class ColtBuilder:
                 )
             return config
 
-        if annotation and self._is_namedtuple(annotation):
+        if annotation and is_namedtuple(annotation):
             type_hints = get_type_hints(annotation)
             kwargs = {
                 key: self._build(
@@ -497,6 +494,7 @@ class ColtBuilder:
             annotation is not None
             and isinstance(constructor, type)
             and isinstance(annotation, type)
+            and not is_typeddict(constructor)
             and not issubclass(constructor, annotation)
         ):
             raise ConfigurationError(

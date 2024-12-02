@@ -136,3 +136,24 @@ def issubtype(a: Any, b: Any) -> bool:
                 return True
 
     return False
+
+
+def is_namedtuple(obj: Any) -> bool:
+    if not isinstance(obj, type) and isinstance(obj, object):
+        obj = type(obj)
+    if not isinstance(obj, type):
+        return False
+    if not issubclass(obj, tuple):
+        return False
+    fields = getattr(obj, "_fields", None)
+    if not isinstance(fields, tuple):
+        return False
+    return all(type(name) is str for name in fields)
+
+
+def is_typeddict(cls: Any) -> bool:
+    if not isinstance(cls, type):
+        return False
+    if not issubclass(cls, dict):
+        return False
+    return typing.get_type_hints(cls) is not None
