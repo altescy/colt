@@ -33,8 +33,7 @@ if sys.version_info >= (3, 10):
     from types import UnionType
 else:
 
-    class UnionType:
-        __origin__: Any
+    class UnionType: ...
 
 
 def import_submodules(package_name: str) -> None:
