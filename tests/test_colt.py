@@ -1,4 +1,5 @@
 import dataclasses
+import sys
 from enum import Enum
 from typing import (
     Any,
@@ -23,6 +24,11 @@ from typing import (
 )
 
 import colt
+
+if sys.version_info >= (3, 9):
+    from typing import Annotated
+else:
+    from typing_extensions import Annotated
 
 
 @colt.register("foo")
@@ -511,3 +517,19 @@ def test_build_multi_inherited_generic_type() -> None:
     assert isinstance(executor.model, MyModel)
     assert isinstance(executor.params, MyModel.Params)
     assert isinstance(executor.data, Item)
+
+
+def test_build_with_annotated() -> None:
+    class Foo:
+        def __init__(self, x: str) -> None:
+            self.x = x
+
+    class Bar:
+        def __init__(self, foo: Annotated[Foo, "test"]) -> None:
+            self.foo = foo
+
+    config = {"foo": {"x": "hello"}}
+    obj = colt.build(config, Bar)
+
+    assert isinstance(obj.foo, Foo)
+    assert obj.foo.x == "hello"
