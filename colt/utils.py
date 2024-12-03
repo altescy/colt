@@ -2,7 +2,22 @@ import importlib
 import pkgutil
 import sys
 import typing
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union, cast
+from typing import _GenericAlias  # type: ignore[attr-defined]
+from typing import (
+    Any,
+    Dict,
+    ForwardRef,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from colt.types import ParamPath
 
@@ -10,7 +25,8 @@ if sys.version_info >= (3, 9):
     from types import GenericAlias
 else:
 
-    class GenericAlias: ...
+    class GenericAlias:
+        __origin__: Any
 
 
 def import_submodules(package_name: str) -> None:
@@ -92,7 +108,7 @@ def remove_optional(annotation: Any) -> Any:
 
 
 def reveal_origin(a: Any) -> Optional[Any]:
-    if isinstance(a, type) and not isinstance(a, GenericAlias):
+    if isinstance(a, type) and not isinstance(a, (GenericAlias, _GenericAlias)):
         return a
     return typing.get_origin(a)
 
@@ -157,3 +173,72 @@ def is_typeddict(cls: Any) -> bool:
     if not issubclass(cls, dict):
         return False
     return typing.get_type_hints(cls) is not None
+
+
+def find_typevars(annotation: Any) -> List[TypeVar]:
+    if isinstance(annotation, TypeVar):
+        return [annotation]
+    output: List[TypeVar] = []
+    args = typing.get_args(annotation)
+    for arg in args:
+        output.extend(find_typevars(arg))
+    return output
+
+
+def get_typevar_map(annotation: Any) -> Dict[TypeVar, Any]:
+    origin = reveal_origin(annotation)
+    if origin is None:
+        return {}
+    if not hasattr(origin, "__parameters__"):
+        return {}
+    typevar_map: Dict[TypeVar, Any] = {}
+    for cls in trace_bases(origin):
+        if cls is origin:
+            continue
+        typevar_map.update(get_typevar_map(cls))
+    args = typing.get_args(annotation)
+    parameters = origin.__parameters__
+    typevar_map.update(dict(zip(parameters, args)))
+    return typevar_map
+
+
+def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
+    if not typevar_map:
+        return annotation
+    if isinstance(annotation, Hashable) and annotation in typevar_map:
+        return typevar_map[annotation]
+    if isinstance(annotation, (GenericAlias, _GenericAlias)):
+        origin = annotation.__origin__
+        args = typing.get_args(annotation)
+        new_args = tuple(replace_types(arg, typevar_map) for arg in args)
+        return _GenericAlias(origin, new_args)
+    return annotation  # type: ignore[unreachable]
+
+
+def trace_bases(cls: Type[Any]) -> Iterator[Type[Any]]:
+    yield cls
+    for base in getattr(cls, "__orig_bases__", getattr(cls, "__bases__", ())):
+        yield from trace_bases(base)
+
+
+def infer_scope(obj: Any) -> Dict[str, Any]:
+    cls = type(obj) if not isinstance(obj, type) else obj
+    return {
+        name: value
+        for cls_ in trace_bases(cls)
+        for name, value in (
+            [(cls_.__module__, sys.modules[cls_.__module__])]
+            + list(sys.modules[cls_.__module__].__dict__.items())
+            + ([(cls_.__name__, cls_)] if hasattr(cls_, "__name__") else [])
+        )
+    }
+
+
+def evaluate_forward_refs(
+    ref: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]
+) -> Any:
+    if sys.version_info >= (3, 12):
+        return ref._evaluate(globalns, localns, frozenset(), recursive_guard=frozenset())  # type: ignore[call-arg]
+    if sys.version_info >= (3, 9):
+        return ref._evaluate(globalns, localns, frozenset())  # type: ignore[call-arg]
+    return ref._evaluate(globalns, localns)  # type: ignore[call-arg]

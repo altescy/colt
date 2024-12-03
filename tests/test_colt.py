@@ -4,6 +4,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     Iterable,
     Iterator,
     List,
@@ -17,6 +18,7 @@ from typing import (
     Set,
     Tuple,
     TypedDict,
+    TypeVar,
     Union,
 )
 
@@ -378,3 +380,134 @@ def test_build_enum() -> None:
 
     assert isinstance(obj, Foo)
     assert obj.x == MyEnum.FOO
+
+
+def test_build_generic_type() -> None:
+    T = TypeVar("T")
+    ParamsT = TypeVar("ParamsT")
+
+    class BaseModel(Generic[ParamsT], colt.Registrable): ...
+
+    @BaseModel.register("mymodel")
+    class MyModel(BaseModel["MyModel.Params"]):
+        @dataclasses.dataclass
+        class Params:
+            name: str
+            age: int
+
+    class Executor:
+        def __init__(self, model: BaseModel[T], params: T) -> None:
+            self.model = model
+            self.params = params
+
+    config = {"model": {"@type": "mymodel"}, "params": {"name": "Alice", "age": 20}}
+    executor = colt.build(config, Executor)
+
+    assert isinstance(executor.model, MyModel)
+    assert isinstance(executor.params, MyModel.Params)
+    assert executor.params.name == "Alice"
+    assert executor.params.age == 20
+
+
+def test_build_lazy_generic_type() -> None:
+    T = TypeVar("T")
+    ParamsT = TypeVar("ParamsT")
+
+    class BaseModel(Generic[ParamsT], colt.Registrable): ...
+
+    @BaseModel.register("mymodel")
+    class MyModel(BaseModel["MyModel.Params"]):
+        @dataclasses.dataclass
+        class Params:
+            name: str
+            age: int
+
+    class Executor:
+        def __init__(self, model: BaseModel[T], params: colt.Lazy[T]) -> None:
+            self.model = model
+            self.params = params
+
+    config = {"model": {"@type": "mymodel"}, "params": {"name": "Alice", "age": 20}}
+    executor = colt.build(config, Executor)
+
+    assert isinstance(executor.model, MyModel)
+    assert isinstance(executor.params, colt.Lazy)
+
+    params = executor.params.construct()
+    assert isinstance(params, MyModel.Params)
+    assert params.name == "Alice"
+    assert params.age == 20
+
+
+def test_build_multi_generic_type() -> None:
+    T = TypeVar("T")
+    U = TypeVar("U")
+    InputT = TypeVar("InputT")
+    ParamsT = TypeVar("ParamsT")
+
+    class Item: ...
+
+    class BaseModel(Generic[InputT, ParamsT], colt.Registrable): ...
+
+    @BaseModel.register("mymodel")
+    class MyModel(BaseModel[Item, "MyModel.Params"]):
+        @dataclasses.dataclass
+        class Params:
+            name: str
+            age: int
+
+    class Executor:
+        def __init__(
+            self, model: BaseModel[T, U], params: colt.Lazy[U], data: T
+        ) -> None:
+            self.model = model
+            self.params = params
+            self.data = data
+
+    config = {
+        "model": {"@type": "mymodel"},
+        "params": {"name": "Alice", "age": 20},
+        "data": {},
+    }
+    executor = colt.build(config, Executor)
+
+    assert isinstance(executor.model, MyModel)
+    assert isinstance(executor.params.construct(), MyModel.Params)
+    assert isinstance(executor.data, Item)
+
+
+def test_build_multi_inherited_generic_type() -> None:
+    T = TypeVar("T")
+    U = TypeVar("U")
+    InputT = TypeVar("InputT")
+    ParamsT = TypeVar("ParamsT")
+
+    class Item: ...
+
+    class BaseModel(Generic[InputT, ParamsT], colt.Registrable): ...
+
+    class BaseItemModel(BaseModel[Item, ParamsT], Generic[ParamsT]): ...
+
+    @BaseModel.register("mymodel")
+    class MyModel(BaseItemModel["MyModel.Params"]):
+        @dataclasses.dataclass
+        class Params:
+            name: str
+            age: int
+
+    class Executor:
+        def __init__(self, model: BaseModel[T, U], params: U, data: T) -> None:
+            self.model = model
+            self.params = params
+            self.data = data
+
+    config = {
+        "model": {"@type": "mymodel"},
+        "params": {"name": "Alice", "age": 20},
+        "data": {},
+    }
+    executor = colt.build(config, Executor)
+
+    assert isinstance(executor.model, MyModel)
+    assert isinstance(executor.params, MyModel.Params)
+    assert isinstance(executor.data, Item)
