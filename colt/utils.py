@@ -29,6 +29,14 @@ else:
         __origin__: Any
 
 
+if sys.version_info >= (3, 10):
+    from types import UnionType
+else:
+
+    class UnionType:
+        __origin__: Any
+
+
 def import_submodules(package_name: str) -> None:
     """
     original code is here:
@@ -207,6 +215,10 @@ def get_typevar_map(annotation: Any) -> Dict[TypeVar, Any]:
     if not hasattr(origin, "__parameters__"):
         return {}
     typevar_map: Dict[TypeVar, Any] = {}
+    if origin in (Union, UnionType):
+        for arg in typing.get_args(annotation):
+            typevar_map.update(get_typevar_map(arg))
+        return typevar_map
     for cls in trace_bases(origin):
         if cls is origin:
             continue
