@@ -383,6 +383,7 @@ def test_build_enum() -> None:
 
 
 def test_build_generic_type() -> None:
+    T = TypeVar("T")
     ParamsT = TypeVar("ParamsT")
 
     class BaseModel(Generic[ParamsT], colt.Registrable): ...
@@ -395,7 +396,7 @@ def test_build_generic_type() -> None:
             age: int
 
     class Executor:
-        def __init__(self, model: BaseModel[ParamsT], params: ParamsT) -> None:
+        def __init__(self, model: BaseModel[T], params: T) -> None:
             self.model = model
             self.params = params
 

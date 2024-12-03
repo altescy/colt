@@ -250,10 +250,16 @@ class ColtBuilder:
                     + [(cls_.__name__, cls_)]
                 )
             }
+            annotation_typevar_map = {
+                k: v
+                for k, v in get_typevar_map(annotation).items()
+                if isinstance(v, TypeVar)
+            }
             for cls_ in (cls, *getattr(cls, "__orig_bases__", ())):
                 for type_var, type_ in get_typevar_map(cls_).items():
                     if isinstance(type_, ForwardRef):
                         type_ = type_._evaluate(globals(), scope, frozenset())  # type: ignore[call-arg]
+                    type_var = annotation_typevar_map.get(type_var, type_var)
                     typevar_map[type_var] = type_
 
         kwargs: Dict[str, Any] = {}
