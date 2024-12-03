@@ -6,6 +6,7 @@ from typing import _GenericAlias  # type: ignore[attr-defined]
 from typing import (
     Any,
     Dict,
+    ForwardRef,
     Hashable,
     Iterable,
     Iterator,
@@ -231,3 +232,13 @@ def infer_scope(obj: Any) -> Dict[str, Any]:
             + ([(cls_.__name__, cls_)] if hasattr(cls_, "__name__") else [])
         )
     }
+
+
+def evaluate_forward_refs(
+    ref: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]
+) -> Any:
+    if sys.version_info >= (3, 12):
+        return ref._evaluate(globalns, localns, frozenset(), recursive_guard=frozenset())  # type: ignore[call-arg]
+    if sys.version_info >= (3, 9):
+        return ref._evaluate(globalns, localns, frozenset())  # type: ignore[call-arg]
+    return ref._evaluate(globalns, localns)  # type: ignore[call-arg]

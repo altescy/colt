@@ -55,6 +55,7 @@ from colt.placeholder import Placeholder
 from colt.registrable import Registrable
 from colt.types import ParamPath
 from colt.utils import (
+    evaluate_forward_refs,
     get_path_name,
     get_typevar_map,
     infer_scope,
@@ -252,10 +253,7 @@ class ColtBuilder:
             for cls_ in trace_bases(cls):
                 for type_var, type_ in get_typevar_map(cls_).items():
                     if isinstance(type_, ForwardRef):
-                        if sys.version_info >= (3, 9):
-                            type_ = type_._evaluate(globals(), scope, frozenset())  # type: ignore[call-arg]
-                        else:
-                            type_ = type_._evaluate(globals(), scope)  # type: ignore[attr-defined]
+                        type_ = evaluate_forward_refs(type_, globals(), scope)
                     type_var = annotation_typevar_map.get(type_var, type_var)
                     typevar_map[type_var] = type_
 
