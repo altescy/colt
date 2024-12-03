@@ -407,3 +407,33 @@ def test_build_generic_type() -> None:
     assert isinstance(executor.params, MyModel.Params)
     assert executor.params.name == "Alice"
     assert executor.params.age == 20
+
+
+def test_build_lazy_generic_type() -> None:
+    T = TypeVar("T")
+    ParamsT = TypeVar("ParamsT")
+
+    class BaseModel(Generic[ParamsT], colt.Registrable): ...
+
+    @BaseModel.register("mymodel")
+    class MyModel(BaseModel["MyModel.Params"]):
+        @dataclasses.dataclass
+        class Params:
+            name: str
+            age: int
+
+    class Executor:
+        def __init__(self, model: BaseModel[T], params: colt.Lazy[T]) -> None:
+            self.model = model
+            self.params = params
+
+    config = {"model": {"@type": "mymodel"}, "params": {"name": "Alice", "age": 20}}
+    executor = colt.build(config, Executor)
+
+    assert isinstance(executor.model, MyModel)
+    assert isinstance(executor.params, colt.Lazy)
+
+    params = executor.params.construct()
+    assert isinstance(params, MyModel.Params)
+    assert params.name == "Alice"
+    assert params.age == 20

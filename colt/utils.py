@@ -2,9 +2,11 @@ import importlib
 import pkgutil
 import sys
 import typing
+from typing import _GenericAlias  # type: ignore[attr-defined]
 from typing import (
     Any,
     Dict,
+    Hashable,
     Iterable,
     Iterator,
     List,
@@ -194,14 +196,14 @@ def get_typevar_map(annotation: Any) -> Dict[TypeVar, Any]:
 
 
 def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
-    if annotation in typevar_map:
+    if isinstance(annotation, Hashable) and annotation in typevar_map:
         return typevar_map[annotation]
-    if isinstance(annotation, GenericAlias):
+    if isinstance(annotation, (GenericAlias, _GenericAlias)):
         origin = annotation.__origin__
         args = typing.get_args(annotation)
         new_args = [replace_types(arg, typevar_map) for arg in args]
-        return origin[new_args]
-    return annotation
+        return origin[*new_args]
+    return annotation  # type: ignore[unreachable]
 
 
 def trace_bases(cls: Type[Any]) -> Iterator[Type[Any]]:
