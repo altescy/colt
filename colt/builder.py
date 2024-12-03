@@ -57,11 +57,13 @@ from colt.types import ParamPath
 from colt.utils import (
     get_path_name,
     get_typevar_map,
+    infer_scope,
     is_namedtuple,
     is_typeddict,
     remove_optional,
     replace_types,
     reveal_origin,
+    trace_bases,
 )
 
 T = TypeVar("T")
@@ -241,21 +243,13 @@ class ColtBuilder:
 
         def update_typevar(obj: Any, annotation: Any) -> Any:
             cls = type(obj)
-            scope = {
-                name: value
-                for cls_ in (cls, *getattr(cls, "__orig_bases__", ()))
-                for name, value in (
-                    [(cls_.__module__, sys.modules[cls_.__module__])]
-                    + list(sys.modules[cls_.__module__].__dict__.items())
-                    + [(cls_.__name__, cls_)]
-                )
-            }
+            scope = infer_scope(cls)
             annotation_typevar_map = {
                 k: v
                 for k, v in get_typevar_map(annotation).items()
                 if isinstance(v, TypeVar)
             }
-            for cls_ in (cls, *getattr(cls, "__orig_bases__", ())):
+            for cls_ in trace_bases(cls):
                 for type_var, type_ in get_typevar_map(cls_).items():
                     if isinstance(type_, ForwardRef):
                         type_ = type_._evaluate(globals(), scope, frozenset())  # type: ignore[call-arg]

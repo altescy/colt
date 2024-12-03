@@ -2,7 +2,19 @@ import importlib
 import pkgutil
 import sys
 import typing
-from typing import Any, Dict, Iterable, List, Optional, Sequence, TypeVar, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from colt.types import ParamPath
 
@@ -190,3 +202,22 @@ def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
         new_args = [replace_types(arg, typevar_map) for arg in args]
         return origin[new_args]
     return annotation
+
+
+def trace_bases(cls: Type[Any]) -> Iterator[Type[Any]]:
+    yield cls
+    for base in getattr(cls, "__orig_bases__", getattr(cls, "__bases__", ())):
+        yield from trace_bases(base)
+
+
+def infer_scope(obj: Any) -> Dict[str, Any]:
+    cls = type(obj) if not isinstance(obj, type) else obj
+    return {
+        name: value
+        for cls_ in trace_bases(cls)
+        for name, value in (
+            [(cls_.__module__, sys.modules[cls_.__module__])]
+            + list(sys.modules[cls_.__module__].__dict__.items())
+            + [(cls_.__name__, cls_)]
+        )
+    }
