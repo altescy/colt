@@ -252,7 +252,10 @@ class ColtBuilder:
             for cls_ in trace_bases(cls):
                 for type_var, type_ in get_typevar_map(cls_).items():
                     if isinstance(type_, ForwardRef):
-                        type_ = type_._evaluate(globals(), scope, frozenset())  # type: ignore[call-arg]
+                        if sys.version_info >= (3, 9):
+                            type_ = type_._evaluate(globals(), scope, frozenset())  # type: ignore[call-arg]
+                        else:
+                            type_ = type_._evaluate(globals(), scope)  # type: ignore[attr-defined]
                     type_var = annotation_typevar_map.get(type_var, type_var)
                     typevar_map[type_var] = type_
 

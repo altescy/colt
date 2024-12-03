@@ -107,7 +107,7 @@ def remove_optional(annotation: Any) -> Any:
 
 
 def reveal_origin(a: Any) -> Optional[Any]:
-    if isinstance(a, type) and not isinstance(a, GenericAlias):
+    if isinstance(a, type) and not isinstance(a, (GenericAlias, _GenericAlias)):
         return a
     return typing.get_origin(a)
 
@@ -202,13 +202,15 @@ def get_typevar_map(annotation: Any) -> Dict[TypeVar, Any]:
 
 
 def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
+    if not typevar_map:
+        return annotation
     if isinstance(annotation, Hashable) and annotation in typevar_map:
         return typevar_map[annotation]
     if isinstance(annotation, (GenericAlias, _GenericAlias)):
         origin = annotation.__origin__
         args = typing.get_args(annotation)
-        new_args = [replace_types(arg, typevar_map) for arg in args]
-        return origin[*new_args]
+        new_args = tuple(replace_types(arg, typevar_map) for arg in args)
+        return _GenericAlias(origin, new_args)
     return annotation  # type: ignore[unreachable]
 
 
@@ -226,6 +228,6 @@ def infer_scope(obj: Any) -> Dict[str, Any]:
         for name, value in (
             [(cls_.__module__, sys.modules[cls_.__module__])]
             + list(sys.modules[cls_.__module__].__dict__.items())
-            + [(cls_.__name__, cls_)]
+            + ([(cls_.__name__, cls_)] if hasattr(cls_, "__name__") else [])
         )
     }
