@@ -190,9 +190,15 @@ def get_typevar_map(annotation: Any) -> Dict[TypeVar, Any]:
         return {}
     if not hasattr(origin, "__parameters__"):
         return {}
+    typevar_map: Dict[TypeVar, Any] = {}
+    for cls in trace_bases(origin):
+        if cls is origin:
+            continue
+        typevar_map.update(get_typevar_map(cls))
     args = typing.get_args(annotation)
     parameters = origin.__parameters__
-    return dict(zip(parameters, args))
+    typevar_map.update(dict(zip(parameters, args)))
+    return typevar_map
 
 
 def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
