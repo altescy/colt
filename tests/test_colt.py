@@ -1,6 +1,5 @@
 import dataclasses
 import sys
-import pytest
 from enum import Enum
 from typing import (
     Any,
@@ -25,6 +24,11 @@ from typing import (
 )
 
 import colt
+
+if sys.version_info >= (3, 9):
+    from typing import Annotated
+else:
+    from typing_extensions import Annotated
 
 
 @colt.register("foo")
@@ -515,10 +519,7 @@ def test_build_multi_inherited_generic_type() -> None:
     assert isinstance(executor.data, Item)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_build_with_annotated() -> None:
-    from typing import Annotated
-
     class Foo:
         def __init__(self, x: str) -> None:
             self.x = x
