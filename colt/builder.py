@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Dict,
     Final,
+    ForwardRef,
     List,
     Literal,
     Mapping,
@@ -55,9 +56,11 @@ from colt.registrable import Registrable
 from colt.types import ParamPath
 from colt.utils import (
     get_path_name,
+    get_typevar_map,
     is_namedtuple,
     is_typeddict,
     remove_optional,
+    replace_types,
     reveal_origin,
 )
 
@@ -203,6 +206,7 @@ class ColtBuilder:
             raise ConfigurationError(
                 f"[{get_path_name(path)}] Arguments must be a list or tuple."
             )
+
         args: List[Any] = [
             self._build(
                 val,
@@ -229,16 +233,41 @@ class ColtBuilder:
             except NameError:
                 type_hints = constructor.__annotations__
 
-        kwargs: Dict[str, Any] = {
-            key: self._build(
+        typevar_map: Dict[TypeVar, Any] = {}
+
+        def get_annotation(key: str) -> Any:
+            annotaiton = type_hints.get(key)
+            return replace_types(annotaiton, typevar_map)
+
+        def update_typevar(obj: Any, annotation: Any) -> Any:
+            cls = type(obj)
+            scope = {
+                name: value
+                for cls_ in (cls, *getattr(cls, "__orig_bases__", ()))
+                for name, value in (
+                    [(cls_.__module__, sys.modules[cls_.__module__])]
+                    + list(sys.modules[cls_.__module__].__dict__.items())
+                    + [(cls_.__name__, cls_)]
+                )
+            }
+            for cls_ in (cls, *getattr(cls, "__orig_bases__", ())):
+                for type_var, type_ in get_typevar_map(cls_).items():
+                    if isinstance(type_, ForwardRef):
+                        type_ = type_._evaluate(globals(), scope, frozenset())  # type: ignore[call-arg]
+                    typevar_map[type_var] = type_
+
+        kwargs: Dict[str, Any] = {}
+        for key, val in config.items():
+            annotation = get_annotation(key)
+            obj = self._build(
                 val,
                 path + (key,),
-                type_hints.get(key),
+                annotation,
                 context=context,
                 skip_construction=skip_construction,
             )
-            for key, val in config.items()
-        }
+            kwargs[key] = obj
+            update_typevar(obj, annotation)
 
         return args, kwargs
 

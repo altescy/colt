@@ -2,7 +2,7 @@ import importlib
 import pkgutil
 import sys
 import typing
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Sequence, TypeVar, Union, cast
 
 from colt.types import ParamPath
 
@@ -10,7 +10,8 @@ if sys.version_info >= (3, 9):
     from types import GenericAlias
 else:
 
-    class GenericAlias: ...
+    class GenericAlias:
+        __origin__: Any
 
 
 def import_submodules(package_name: str) -> None:
@@ -157,3 +158,35 @@ def is_typeddict(cls: Any) -> bool:
     if not issubclass(cls, dict):
         return False
     return typing.get_type_hints(cls) is not None
+
+
+def find_typevars(annotation: Any) -> List[TypeVar]:
+    if isinstance(annotation, TypeVar):
+        return [annotation]
+    output: List[TypeVar] = []
+    args = typing.get_args(annotation)
+    for arg in args:
+        output.extend(find_typevars(arg))
+    return output
+
+
+def get_typevar_map(annotation: Any) -> Dict[TypeVar, Any]:
+    origin = reveal_origin(annotation)
+    if origin is None:
+        return {}
+    if not hasattr(origin, "__parameters__"):
+        return {}
+    args = typing.get_args(annotation)
+    parameters = origin.__parameters__
+    return dict(zip(parameters, args))
+
+
+def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
+    if annotation in typevar_map:
+        return typevar_map[annotation]
+    if isinstance(annotation, GenericAlias):
+        origin = annotation.__origin__
+        args = typing.get_args(annotation)
+        new_args = [replace_types(arg, typevar_map) for arg in args]
+        return origin[new_args]
+    return annotation

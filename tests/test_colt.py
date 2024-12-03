@@ -4,6 +4,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     Iterable,
     Iterator,
     List,
@@ -17,6 +18,7 @@ from typing import (
     Set,
     Tuple,
     TypedDict,
+    TypeVar,
     Union,
 )
 
@@ -378,3 +380,29 @@ def test_build_enum() -> None:
 
     assert isinstance(obj, Foo)
     assert obj.x == MyEnum.FOO
+
+
+def test_build_generic_type() -> None:
+    ParamsT = TypeVar("ParamsT")
+
+    class BaseModel(Generic[ParamsT], colt.Registrable): ...
+
+    @BaseModel.register("mymodel")
+    class MyModel(BaseModel["MyModel.Params"]):
+        @dataclasses.dataclass
+        class Params:
+            name: str
+            age: int
+
+    class Executor:
+        def __init__(self, model: BaseModel[ParamsT], params: ParamsT) -> None:
+            self.model = model
+            self.params = params
+
+    config = {"model": {"@type": "mymodel"}, "params": {"name": "Alice", "age": 20}}
+    executor = colt.build(config, Executor)
+
+    assert isinstance(executor.model, MyModel)
+    assert isinstance(executor.params, MyModel.Params)
+    assert executor.params.name == "Alice"
+    assert executor.params.age == 20
