@@ -1,4 +1,6 @@
 import dataclasses
+import sys
+import pytest
 from enum import Enum
 from typing import (
     Any,
@@ -511,3 +513,22 @@ def test_build_multi_inherited_generic_type() -> None:
     assert isinstance(executor.model, MyModel)
     assert isinstance(executor.params, MyModel.Params)
     assert isinstance(executor.data, Item)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+def test_build_with_annotated() -> None:
+    from typing import Annotated
+
+    class Foo:
+        def __init__(self, x: str) -> None:
+            self.x = x
+
+    class Bar:
+        def __init__(self, foo: Annotated[Foo, "test"]) -> None:
+            self.foo = foo
+
+    config = {"foo": {"x": "hello"}}
+    obj = colt.build(config, Bar)
+
+    assert isinstance(obj.foo, Foo)
+    assert obj.foo.x == "hello"
