@@ -9,6 +9,7 @@ from typing import (
     Sequence,
     Tuple,
     TypedDict,
+    TypeVar,
     Union,
 )
 
@@ -74,6 +75,15 @@ def test_update_field(
         (Union[int, str, List[str]], Union[int, str], False),
         (Iterator[int], Iterator[int], True),
         (Iterator[int], Iterator[str], False),
+        (TypeVar("T"), TypeVar("T"), True),
+        (TypeVar("T", bound=int), TypeVar("T", bound=Union[int, str]), True),
+        (TypeVar("T", bound=Dict), TypeVar("T", bound=Union[int, str]), False),
+        (TypeVar("T", bound=Dict[str, str]), Dict[str, Any], True),
+        (Dict[str, str], TypeVar("T", bound=Dict[str, Any]), True),
+        (int, TypeVar("T", int, str), True),
+        (dict, TypeVar("T", int, str), False),
+        (TypeVar("T", int, str), Union[int, str], True),
+        (TypeVar("T", int, str), str, False),
     ],
 )
 def test_issubtype(a: Any, b: Any, expected: bool) -> None:
