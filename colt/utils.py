@@ -120,6 +120,8 @@ def issubtype(a: Any, b: Any) -> bool:
         return True
 
     if isinstance(a, TypeVar):
+        if a is b:
+            return True
         if a.__bound__ is not None:
             return issubtype(a.__bound__, b)
         if a.__constraints__:
