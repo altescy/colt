@@ -119,6 +119,19 @@ def issubtype(a: Any, b: Any) -> bool:
     if a == b == Ellipsis:
         return True
 
+    if isinstance(a, TypeVar):
+        if a.__bound__ is not None:
+            return issubtype(a.__bound__, b)
+        if a.__constraints__:
+            return all(issubtype(constraint, b) for constraint in a.__constraints__)
+        return True
+    if isinstance(b, TypeVar):
+        if b.__bound__ is not None:
+            return issubtype(a, b.__bound__)
+        if b.__constraints__:
+            return any(issubtype(a, constraint) for constraint in b.__constraints__)
+        return True
+
     a_origin = reveal_origin(a)
     b_origin = reveal_origin(b)
     a_args = typing.get_args(a)
