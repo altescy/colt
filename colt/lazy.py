@@ -25,17 +25,18 @@ class Lazy(Generic[T]):
     def __init__(
         self,
         config: Any,
-        path: "ParamPath",
-        context: "ColtContext",
+        path: "ParamPath" = (),
+        context: Optional["ColtContext"] = None,
         cls: Optional[Type[T]] = None,
         builder: Optional["ColtBuilder"] = None,
     ) -> None:
         from colt.builder import ColtBuilder
+        from colt.context import ColtContext
 
         self._cls = cls
         self._config = config or {}
         self._path = path
-        self._context = context
+        self._context = context or ColtContext(config)
         self._builder = builder or ColtBuilder()
 
         self._builder.dry_run(
