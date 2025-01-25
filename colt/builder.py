@@ -497,6 +497,13 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
+        if (
+            isinstance(annotation, type)
+            and issubclass(annotation, (float, complex))
+            and isinstance(config, int)
+        ):
+            return annotation(config)
+
         if not isinstance(config, abc.Mapping):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
