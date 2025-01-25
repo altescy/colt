@@ -533,3 +533,19 @@ def test_build_with_annotated() -> None:
 
     assert isinstance(obj.foo, Foo)
     assert obj.foo.x == "hello"
+
+
+def test_numerical_value_compatiblity() -> None:
+    class Foo:
+        def __init__(self, x: float, y: complex) -> None:
+            self.x = x
+            self.y = y
+
+    config = {"x": 1, "y": 1}
+    obj = colt.build(config, Foo)
+
+    assert isinstance(obj, Foo)
+    assert isinstance(obj.x, float)
+    assert isinstance(obj.y, complex)
+    assert obj.x == 1.0
+    assert obj.y == 1.0 + 0j
