@@ -23,6 +23,8 @@ from typing import (
     Union,
 )
 
+import pytest
+
 import colt
 
 if sys.version_info >= (3, 9):
@@ -84,6 +86,12 @@ class Waldo:
 class Fred:
     def __init__(self, x: Any) -> None:
         self.x = x
+
+
+@colt.register("int2str")
+class Int2Str:
+    def __call__(self, value: int) -> str:
+        return str(value)
 
 
 def test_colt_with_type() -> None:
@@ -287,7 +295,7 @@ def test_build_with_abstract_classes() -> None:
 
     @colt.register("func")
     class Func:
-        def __call__(self) -> None:
+        def __call__(self, value: str) -> None:
             pass
 
     @colt.register("iter")
@@ -549,3 +557,26 @@ def test_numerical_value_compatiblity() -> None:
     assert isinstance(obj.y, complex)
     assert obj.x == 1.0
     assert obj.y == 1.0 + 0j
+
+
+def test_callable() -> None:
+    class Executor:
+        def __init__(self, func: Callable[[int], str]) -> None:
+            self.func = func
+
+    executor = colt.build({"func": {"@type": "int2str"}}, Executor)
+    assert isinstance(executor, Executor)
+    assert isinstance(executor.func, Int2Str)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+def test_abc_callable() -> None:
+    from collections.abc import Callable
+
+    class Executor:
+        def __init__(self, func: Callable[[int], str]) -> None:
+            self.func = func
+
+    executor = colt.build({"func": {"@type": "int2str"}}, Executor)
+    assert isinstance(executor, Executor)
+    assert isinstance(executor.func, Int2Str)
