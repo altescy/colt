@@ -31,14 +31,16 @@ if sys.version_info >= (3, 9):
     from types import GenericAlias
 else:
 
-    class GenericAlias: ...
+    class GenericAlias:
+        ...
 
 
 if sys.version_info >= (3, 10):
     from types import UnionType
 else:
 
-    class UnionType: ...
+    class UnionType:
+        ...
 
 
 if sys.version_info >= (3, 11):
@@ -107,16 +109,20 @@ class ColtBuilder:
         return self._callback
 
     @overload
-    def __call__(self, config: Any) -> Any: ...
+    def __call__(self, config: Any) -> Any:
+        ...
 
     @overload
-    def __call__(self, config: Any, cls: Type[T]) -> T: ...
+    def __call__(self, config: Any, cls: Type[T]) -> T:
+        ...
 
     @overload
-    def __call__(self, config: Any, cls: Callable[..., T]) -> T: ...
+    def __call__(self, config: Any, cls: Callable[..., T]) -> T:
+        ...
 
     @overload
-    def __call__(self, config: Any, cls: None = ...) -> Any: ...
+    def __call__(self, config: Any, cls: None = ...) -> Any:
+        ...
 
     def __call__(
         self,
@@ -505,6 +511,14 @@ class ColtBuilder:
         ):
             return annotation(config)
 
+        if (
+            origin is not None
+            and not is_typeddict(origin)
+            and isinstance(origin, type)
+            and isinstance(config, origin)
+        ):
+            return config
+
         if not isinstance(config, abc.Mapping):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
@@ -536,10 +550,10 @@ class ColtBuilder:
         if self._typekey in config:
             config = dict(config)
             class_name = config.pop(self._typekey)
-            constructor: Union[Type[T], Callable[..., T]] = (
-                self._get_constructor_by_name(
-                    class_name, path, annotation, allow_to_import=not self._strict
-                )
+            constructor: Union[
+                Type[T], Callable[..., T]
+            ] = self._get_constructor_by_name(
+                class_name, path, annotation, allow_to_import=not self._strict
             )
         else:
             constructor = origin or annotation  # type: ignore
