@@ -2,6 +2,7 @@ import sys
 from collections import namedtuple
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     NamedTuple,
@@ -21,6 +22,11 @@ if sys.version_info >= (3, 9):
     from collections.abc import Iterator
 else:
     from typing import Iterator
+
+
+class Int2Str:
+    def __call__(self, x: int) -> str:
+        return str(x)
 
 
 @pytest.mark.parametrize(
@@ -84,6 +90,12 @@ def test_update_field(
         (dict, TypeVar("T", int, str), False),
         (TypeVar("T", int, str), Union[int, str], True),
         (TypeVar("T", int, str), str, False),
+        (Callable[[int], str], Callable[[int], str], True),
+        (Callable[[int], str], Callable[[Union[int, str]], str], True),
+        (Callable[[Union[int, str]], str], Callable[[int], str], False),
+        (Callable[[Union[int, str]], str], Callable[..., str], True),
+        (Int2Str, Callable[[int], str], True),
+        (Int2Str, Callable[[str], str], False),
     ],
 )
 def test_issubtype(a: Any, b: Any, expected: bool) -> None:

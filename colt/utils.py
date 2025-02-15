@@ -1,7 +1,9 @@
 import importlib
+import inspect
 import pkgutil
 import sys
 import typing
+from collections import abc
 from typing import _GenericAlias  # type: ignore[attr-defined]
 from typing import (
     Any,
@@ -30,8 +32,9 @@ else:
 
 
 if sys.version_info >= (3, 10):
-    from types import UnionType
+    from types import NoneType, UnionType
 else:
+    NoneType = type(None)
 
     class UnionType: ...
 
@@ -167,6 +170,46 @@ def issubtype(a: Any, b: Any) -> bool:
             and len(b_args) == 1
         ):
             return issubtype(a_args[0], b_args[0])
+        if b_origin is abc.Callable:
+            if a_origin is abc.Callable:
+                a_callable_args = a_args[0]
+                a_callable_return_type = a_args[1]
+            else:
+                call_method = getattr(a_origin, "__call__", None)
+                if call_method is None:
+                    return False
+                if not b_args:
+                    return True
+                a_callable_signature = inspect.signature(call_method)
+                a_callable_args = tuple(
+                    p.annotation
+                    for i, (k, p) in enumerate(a_callable_signature.parameters.items())
+                    if not (i == 0 and k == "self")
+                )
+                a_callable_return_type = (
+                    a_callable_signature.return_annotation
+                    if a_callable_signature.return_annotation != inspect._empty
+                    else Any
+                )
+            b_callable_args = b_args[0]
+            b_callable_return_type = b_args[1]
+            a_callable_return_type = (
+                NoneType if a_callable_return_type is None else a_callable_return_type
+            )
+            b_callable_return_type = (
+                NoneType if b_callable_return_type is None else b_callable_return_type
+            )
+            if not issubtype(a_callable_return_type, b_callable_return_type):
+                return False
+            if b_callable_args == Ellipsis:
+                return True
+            if len(a_callable_args) != len(b_callable_args):
+                return False
+            return all(
+                issubtype(a_arg, b_arg)
+                for a_arg, b_arg in zip(a_callable_args, b_callable_args)
+            )
+
         if len(a_args) != len(b_args):
             return False
         if a_args and b_args:

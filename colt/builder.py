@@ -61,6 +61,7 @@ from colt.utils import (
     infer_scope,
     is_namedtuple,
     is_typeddict,
+    issubtype,
     remove_optional,
     replace_types,
     reveal_origin,
@@ -543,7 +544,13 @@ class ColtBuilder:
         else:
             constructor = origin or annotation  # type: ignore
 
-        if (
+        if origin == abc.Callable:
+            if not issubtype(constructor, annotation):
+                raise ConfigurationError(
+                    f"[{get_path_name(path)}] Type mismatch, expected type is "
+                    f"{type}, but actual type is {constructor}."
+                )
+        elif (
             annotation is not None
             and isinstance(constructor, type)
             and isinstance(annotation, type)
