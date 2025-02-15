@@ -505,6 +505,14 @@ class ColtBuilder:
         ):
             return annotation(config)
 
+        if (
+            origin is not None
+            and not is_typeddict(origin)
+            and isinstance(origin, type)
+            and isinstance(config, origin)
+        ):
+            return config
+
         if not isinstance(config, abc.Mapping):
             if origin is not None and not isinstance(config, origin):
                 raise ConfigurationError(
