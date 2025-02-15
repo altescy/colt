@@ -317,7 +317,18 @@ class ColtBuilder:
         if config is None:
             return config
 
-        if origin in (List, list, Sequence, abc.Sequence, abc.MutableSequence):
+        if (
+            origin
+            in (
+                List,
+                list,
+                Sequence,
+                abc.Sequence,
+                abc.MutableSequence,
+            )
+            and isinstance(config, abc.Iterable)
+            and not isinstance(config, abc.Mapping)
+        ):
             value_cls = args[0] if args else None
             return list(
                 self._build(
@@ -330,7 +341,11 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
-        if origin in (Set, set, abc.Set):
+        if (
+            origin in (Set, set, abc.Set)
+            and isinstance(config, abc.Iterable)
+            and not isinstance(config, abc.Mapping)
+        ):
             value_cls = args[0] if args else None
             return set(
                 self._build(
@@ -343,7 +358,11 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
-        if origin in (Tuple, tuple):
+        if (
+            origin in (Tuple, tuple)
+            and isinstance(config, abc.Iterable)
+            and not isinstance(config, abc.Mapping)
+        ):
             if not args:
                 return tuple(
                     self._build(
@@ -378,7 +397,11 @@ class ColtBuilder:
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
-        if origin in (Dict, dict, abc.Mapping, abc.MutableMapping):
+        if (
+            origin in (Dict, dict, abc.Mapping, abc.MutableMapping)
+            and isinstance(config, abc.Mapping)
+            and self._typekey not in config
+        ):
             key_cls = args[0] if args else None
             value_cls = args[1] if args else None
             return {
@@ -405,7 +428,12 @@ class ColtBuilder:
                 )
             return config
 
-        if annotation and is_namedtuple(annotation):
+        if (
+            annotation
+            and is_namedtuple(annotation)
+            and isinstance(config, abc.Mapping)
+            and self._typekey not in config
+        ):
             type_hints = get_type_hints(annotation)
             kwargs = {
                 key: self._build(
