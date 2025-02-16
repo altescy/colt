@@ -580,3 +580,8 @@ def test_abc_callable() -> None:
     executor = colt.build({"func": {"@type": "int2str"}}, Executor)
     assert isinstance(executor, Executor)
     assert isinstance(executor.func, Int2Str)
+
+
+def test_mapping_or_typekey() -> None:
+    obj = colt.build({"@type": "int2str"}, Union[Mapping[int, str], Callable[[int], str]])  # type: ignore[call-overload]
+    assert isinstance(obj, Int2Str)
