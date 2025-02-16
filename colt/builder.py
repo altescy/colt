@@ -538,6 +538,7 @@ class ColtBuilder:
             and not is_typeddict(origin)
             and isinstance(origin, type)
             and isinstance(config, origin)
+            and not (isinstance(config, Mapping) and self._typekey in config)
         ):
             return config
 
