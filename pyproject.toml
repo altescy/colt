@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "colt"
-version = "0.16.5"
+version = "0.16.6"
 description = "A configuration utility for Python object."
 authors = ["altescy <me@altescy.jp>"]
 license = "MIT License"
@@ -21,14 +21,22 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
 
-[tool.poetry.dev-dependencies]
-python-language-server = "^0.36.2"
-pytest = "^7.4.4"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
 pysen = "^0.11.0"
-black = "^24.4.2"
+black = "^24.8.0"
 isort = "^5.13.2"
 flake8 = "^5.0.4"
 mypy = "^1.10.0"
+
+[tool.poetry.group.lsp]
+optional = true
+
+[tool.poetry.group.lsp.dependencies]
+python-lsp-server = { version="^1.0.0", extras=["flake8"] }
+pylsp-mypy = "^0.6.9"
+python-lsp-isort = "^0.2.0"
+python-lsp-black = "^2.0.0"
 
 [tool.pysen]
 version = "0.11"
