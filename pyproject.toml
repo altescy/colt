@@ -1,6 +1,6 @@
 [project]
 name = "colt"
-version = "0.16.1"
+version = "0.16.6"
 description = "A configuration utility for Python object."
 authors = [
     {name = "altescy", email = "me@altescy.jp"},
@@ -39,12 +39,18 @@ allow-direct-references = true
 [tool.hatch.build.targets.sdist]
 include = [
     '/colt',
+    'README.md',
+    'LICENSE',
 ]
 
 [tool.ruff]
 line-length = 120
+exclude = [
+    'examples',
+]
 
 [tool.pyright]
 exclude = [
     '.venv',
+    'examples',
 ]
