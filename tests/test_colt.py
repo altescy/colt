@@ -471,9 +471,7 @@ def test_build_multi_generic_type() -> None:
             age: int
 
     class Executor:
-        def __init__(
-            self, model: BaseModel[T, U], params: colt.Lazy[U], data: T
-        ) -> None:
+        def __init__(self, model: BaseModel[T, U], params: colt.Lazy[U], data: T) -> None:
             self.model = model
             self.params = params
             self.data = data

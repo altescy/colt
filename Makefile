@@ -5,6 +5,8 @@ RUFF     := uv run ruff
 PYRIGHT  := uv run pyright
 MODULE   := colt
 
+.PHONY: all
+all: format lint test
 
 .PHONY: test
 test:
@@ -13,7 +15,7 @@ test:
 .PHONY: lint
 lint:
 	PYTHONPATH=$(PWD) $(RUFF) check
-	PYTHONPATH=$(PWD) $(MYPY) $(MODULE)
+	PYTHONPATH=$(PWD) $(PYRIGHT) $(MODULE)
 
 .PHONY: format
 format:

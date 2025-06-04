@@ -42,9 +42,7 @@ class Lazy(Generic[T]):
         self._context = context
         self._builder = builder or ColtBuilder()
 
-        self._builder.dry_run(
-            self._config, self._cls, path=self._path, context=self._context
-        )
+        self._builder.dry_run(self._config, self._cls, path=self._path, context=self._context)
 
     @property
     def config(self) -> Any:
@@ -60,10 +58,7 @@ class Lazy(Generic[T]):
 
     @property
     def constructor(self) -> Optional[Union[Type[T], Callable[..., T]]]:
-        return (
-            self._builder._get_constructor(self._config, self._path, self._cls)
-            or self._cls
-        )
+        return self._builder._get_constructor(self._config, self._path, self._cls) or self._cls
 
     def update(
         self,
@@ -91,6 +86,4 @@ class Lazy(Generic[T]):
                 update_field(config, k, v)
         else:
             config = self._config
-        return self._builder._build(
-            config, self._path, self._cls, context=self._context
-        )
+        return self._builder._build(config, self._path, self._cls, context=self._context)

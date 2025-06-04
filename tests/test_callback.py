@@ -51,7 +51,7 @@ def test_callback_on_build() -> None:
             annotation: Optional[Union[Type[T], Callable[..., T]]] = None,
         ) -> Any:
             del builder, path
-            if annotation == int and isinstance(config, int):
+            if annotation is int and isinstance(config, int):
                 return config + 1
             raise SkipCallback
 
