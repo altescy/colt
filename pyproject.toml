@@ -21,9 +21,9 @@ Issues = "https://github.com/altescy/colt/issues"
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.394",
-    "pytest>=8.3.4",
-    "ruff>=0.9.6",
+    "pyright>=1.1.402",
+    "pytest>=8.3.0",
+    "ruff>=0.11.13",
 ]
 
 [build-system]
