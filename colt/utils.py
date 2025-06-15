@@ -297,7 +297,7 @@ def infer_scope(obj: Any) -> Dict[str, Any]:
 
 
 def evaluate_forward_refs(ref: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]) -> Any:
-    if sys.version_info >= (3, 12):
+    if sys.version_info >= (3, 12, 4):
         return ref._evaluate(globalns, localns, frozenset(), recursive_guard=frozenset())  # type: ignore[call-arg]
     if sys.version_info >= (3, 9):
         return ref._evaluate(globalns, localns, frozenset())  # type: ignore[call-arg]
