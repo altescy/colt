@@ -155,18 +155,12 @@ class ColtBuilder:
             origin = annotation
         else:
             origin = reveal_origin(annotation) if annotation else None
-        if (
-            origin is not None
-            and isinstance(origin, type)
-            and issubclass(origin, Registrable)
-        ):
+        if origin is not None and isinstance(origin, type) and issubclass(origin, Registrable):
             constructor = cast(Type[T], origin.by_name(name, allow_to_import))
         else:
             constructor = cast(Type[T], DefaultRegistry.by_name(name, allow_to_import))
         if constructor is None:
-            raise ConfigurationError(
-                f"[{ColtBuilder.get_path_name(path)}] type not found error: {name}"
-            )
+            raise ConfigurationError(f"[{get_path_name(path)}] type not found error: {name}")
         return constructor
 
     def _get_constructor(
@@ -207,9 +201,7 @@ class ColtBuilder:
             config.pop(self._argskey)
 
         if not isinstance(args_config, (list, tuple)):
-            raise ConfigurationError(
-                f"[{get_path_name(path)}] Arguments must be a list or tuple."
-            )
+            raise ConfigurationError(f"[{get_path_name(path)}] Arguments must be a list or tuple.")
 
         args: List[Any] = [
             self._build(
@@ -246,11 +238,7 @@ class ColtBuilder:
         def update_typevar(obj: Any, annotation: Any) -> Any:
             cls = type(obj)
             scope = infer_scope(cls)
-            annotation_typevar_map = {
-                k: v
-                for k, v in get_typevar_map(annotation).items()
-                if isinstance(v, TypeVar)
-            }
+            annotation_typevar_map = {k: v for k, v in get_typevar_map(annotation).items() if isinstance(v, TypeVar)}
             for cls_ in trace_bases(cls):
                 for type_var, type_ in get_typevar_map(cls_).items():
                     if isinstance(type_, ForwardRef):
@@ -285,9 +273,7 @@ class ColtBuilder:
     ) -> Union[T, Any]:
         if self._callback is not None:
             with suppress(SkipCallback):
-                config = self._callback.on_build(
-                    path, config, self, context, annotation
-                )
+                config = self._callback.on_build(path, config, self, context, annotation)
 
         if annotation is not None and isinstance(annotation, type):
             annotation = remove_optional(annotation)
@@ -298,8 +284,7 @@ class ColtBuilder:
         if isinstance(config, Placeholder):
             if annotation is not None and not config.match_type_hint(annotation):
                 raise ConfigurationError(
-                    f"[{get_path_name(path)}] Placeholder type mismatch: "
-                    f"expected {annotation}, got {config.type_hint}"
+                    f"[{get_path_name(path)}] Placeholder type mismatch: expected {annotation}, got {config.type_hint}"
                 )
             return config
 
@@ -341,11 +326,7 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
-        if (
-            origin in (Set, set, abc.Set)
-            and isinstance(config, abc.Iterable)
-            and not isinstance(config, abc.Mapping)
-        ):
+        if origin in (Set, set, abc.Set) and isinstance(config, abc.Iterable) and not isinstance(config, abc.Mapping):
             value_cls = args[0] if args else None
             return set(
                 self._build(
@@ -358,11 +339,7 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
-        if (
-            origin in (Tuple, tuple)
-            and isinstance(config, abc.Iterable)
-            and not isinstance(config, abc.Mapping)
-        ):
+        if origin in (Tuple, tuple) and isinstance(config, abc.Iterable) and not isinstance(config, abc.Mapping):
             if not args:
                 return tuple(
                     self._build(
@@ -423,17 +400,10 @@ class ColtBuilder:
 
         if origin == Literal:
             if config not in args:
-                raise ConfigurationError(
-                    f"[{get_path_name(path)}] {config} is not a valid literal value."
-                )
+                raise ConfigurationError(f"[{get_path_name(path)}] {config} is not a valid literal value.")
             return config
 
-        if (
-            annotation
-            and is_namedtuple(annotation)
-            and isinstance(config, abc.Mapping)
-            and self._typekey not in config
-        ):
+        if annotation and is_namedtuple(annotation) and isinstance(config, abc.Mapping) and self._typekey not in config:
             type_hints = get_type_hints(annotation)
             kwargs = {
                 key: self._build(
@@ -462,9 +432,7 @@ class ColtBuilder:
 
         if origin in (Union, UnionType):
             if not args:
-                return self._build(
-                    config, path, context=context, skip_construction=skip_construction
-                )
+                return self._build(config, path, context=context, skip_construction=skip_construction)
 
             trial_exceptions: List[Tuple[Any, Exception, str]] = []
             for value_cls in args:
@@ -526,11 +494,7 @@ class ColtBuilder:
                 for i, x in enumerate(config)
             )
 
-        if (
-            isinstance(annotation, type)
-            and issubclass(annotation, (float, complex))
-            and isinstance(config, int)
-        ):
+        if isinstance(annotation, type) and issubclass(annotation, (float, complex)) and isinstance(config, int):
             return annotation(config)
 
         if (
@@ -573,10 +537,8 @@ class ColtBuilder:
         if self._typekey in config:
             config = dict(config)
             class_name = config.pop(self._typekey)
-            constructor: Union[Type[T], Callable[..., T]] = (
-                self._get_constructor_by_name(
-                    class_name, path, annotation, allow_to_import=not self._strict
-                )
+            constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
+                class_name, path, annotation, allow_to_import=not self._strict
             )
         else:
             constructor = origin or annotation  # type: ignore
@@ -584,8 +546,7 @@ class ColtBuilder:
         if origin == abc.Callable:
             if not issubtype(constructor, annotation):
                 raise ConfigurationError(
-                    f"[{get_path_name(path)}] Type mismatch, expected type is "
-                    f"{type}, but actual type is {constructor}."
+                    f"[{get_path_name(path)}] Type mismatch, expected type is {type}, but actual type is {constructor}."
                 )
         elif (
             annotation is not None

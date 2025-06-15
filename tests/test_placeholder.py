@@ -54,7 +54,5 @@ def test_placeholder_without_annotation() -> None:
         (int, Union[str, float], False),
     ],
 )
-def test_placeholder_match_type_hint(
-    placeholder: Any, annotation: Any, expected: bool
-) -> None:
+def test_placeholder_match_type_hint(placeholder: Any, annotation: Any, expected: bool) -> None:
     assert Placeholder(placeholder).match_type_hint(annotation) == expected

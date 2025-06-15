@@ -4,7 +4,6 @@ import pkgutil
 import sys
 import typing
 from collections import abc
-from typing import _GenericAlias  # type: ignore[attr-defined]
 from typing import (
     Any,
     Dict,
@@ -18,6 +17,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    _GenericAlias,  # type: ignore[attr-defined]
     cast,
 )
 
@@ -193,22 +193,15 @@ def issubtype(a: Any, b: Any) -> bool:
                 )
             b_callable_args = b_args[0]
             b_callable_return_type = b_args[1]
-            a_callable_return_type = (
-                NoneType if a_callable_return_type is None else a_callable_return_type
-            )
-            b_callable_return_type = (
-                NoneType if b_callable_return_type is None else b_callable_return_type
-            )
+            a_callable_return_type = NoneType if a_callable_return_type is None else a_callable_return_type
+            b_callable_return_type = NoneType if b_callable_return_type is None else b_callable_return_type
             if not issubtype(a_callable_return_type, b_callable_return_type):
                 return False
             if b_callable_args == Ellipsis:
                 return True
             if len(a_callable_args) != len(b_callable_args):
                 return False
-            return all(
-                issubtype(a_arg, b_arg)
-                for a_arg, b_arg in zip(a_callable_args, b_callable_args)
-            )
+            return all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_callable_args, b_callable_args))
 
         if len(a_args) != len(b_args):
             return False
@@ -277,7 +270,7 @@ def replace_types(annotation: Any, typevar_map: Dict[Any, Any]) -> Any:
     if isinstance(annotation, Hashable) and annotation in typevar_map:
         return typevar_map[annotation]
     if isinstance(annotation, (GenericAlias, _GenericAlias)):
-        origin = annotation.__origin__
+        origin = typing.get_origin(annotation)
         args = typing.get_args(annotation)
         new_args = tuple(replace_types(arg, typevar_map) for arg in args)
         return _GenericAlias(origin, new_args)
@@ -303,10 +296,8 @@ def infer_scope(obj: Any) -> Dict[str, Any]:
     }
 
 
-def evaluate_forward_refs(
-    ref: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]
-) -> Any:
-    if sys.version_info >= (3, 12):
+def evaluate_forward_refs(ref: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]) -> Any:
+    if sys.version_info >= (3, 12, 4):
         return ref._evaluate(globalns, localns, frozenset(), recursive_guard=frozenset())  # type: ignore[call-arg]
     if sys.version_info >= (3, 9):
         return ref._evaluate(globalns, localns, frozenset())  # type: ignore[call-arg]

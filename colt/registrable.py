@@ -47,9 +47,7 @@ class Registrable:
         return decorator
 
     @classmethod
-    def by_name(
-        cls, name: str, allow_to_import: bool = True
-    ) -> Union[Type[T], Callable[..., T]]:
+    def by_name(cls, name: str, allow_to_import: bool = True) -> Union[Type[T], Callable[..., T]]:
         subclass, constructor = cls.resolve_class_name(name, allow_to_import)
 
         if not constructor:
@@ -58,9 +56,7 @@ class Registrable:
         return cast(Callable[..., T], getattr(subclass, constructor))
 
     @classmethod
-    def resolve_class_name(
-        cls, name: str, allow_to_import: bool = True
-    ) -> Tuple[Type[Any], Optional[str]]:
+    def resolve_class_name(cls, name: str, allow_to_import: bool = True) -> Tuple[Type[Any], Optional[str]]:
         registry = Registrable._registry[cls]
 
         if name in registry:
@@ -76,9 +72,7 @@ class Registrable:
             try:
                 module = importlib.import_module(modulename)
             except ModuleNotFoundError as e:
-                raise ConfigurationError(
-                    f"module {modulename} not found ({name})"
-                ) from e
+                raise ConfigurationError(f"module {modulename} not found ({name})") from e
 
             try:
                 while "." in subname:
@@ -92,6 +86,4 @@ class Registrable:
                     f"attribute {subname} not found in {modulename} ({name})"  # noqa: E713
                 ) from e
 
-        raise ConfigurationError(
-            f"{name} is not a registered name for {cls.__name__}. "
-        )
+        raise ConfigurationError(f"{name} is not a registered name for {cls.__name__}. ")

@@ -1,24 +1,26 @@
-PWD              := $(shell pwd)
-PYTHON           := poetry run python
-PYTEST           := poetry run pytest
-PYSEN            := poetry run pysen
-MODULE           := colt
-
+PWD      := $(shell pwd)
+PYTHON   := uv run python
+PYTEST   := uv run pytest
+RUFF     := uv run ruff
+PYRIGHT  := uv run pyright
+MODULE   := colt
 
 .PHONY: all
 all: format lint test
 
-.PHONY: lint
-lint:
-	$(PYSEN) run lint
-
-.PHONY: format
-format:
-	$(PYSEN) run format
-
 .PHONY: test
 test:
 	PYTHONPATH=$(PWD) $(PYTEST)
+
+.PHONY: lint
+lint:
+	PYTHONPATH=$(PWD) $(RUFF) check
+	PYTHONPATH=$(PWD) $(PYRIGHT) $(MODULE)
+
+.PHONY: format
+format:
+	PYTHONPATH=$(PWD) $(RUFF) check --select I --fix
+	PYTHONPATH=$(PWD) $(RUFF) format
 
 .PHONY: clean
 clean: clean-pyc clean-build
