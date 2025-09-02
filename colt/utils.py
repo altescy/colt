@@ -1,9 +1,10 @@
+import collections.abc
 import importlib
 import inspect
+import itertools
 import pkgutil
 import sys
 import typing
-from collections import abc
 from typing import (
     Any,
     Dict,
@@ -124,24 +125,29 @@ def reveal_origin(a: Any) -> Optional[Any]:
 
 
 def issubtype(a: Any, b: Any) -> bool:
+    if a is b:
+        return True
+    if a == b:
+        return True
     if b == Any:
         return True
-    if a == b == Ellipsis:
-        return True
+
+    if isinstance(a, type) and isinstance(b, type):
+        return issubclass(a, b)
 
     if isinstance(a, TypeVar):
         if a is b:
             return True
-        if a.__bound__ is not None:
+        if a.__bound__:
             return issubtype(a.__bound__, b)
         if a.__constraints__:
-            return all(issubtype(constraint, b) for constraint in a.__constraints__)
+            return all(issubtype(c, b) for c in a.__constraints__)
         return True
     if isinstance(b, TypeVar):
-        if b.__bound__ is not None:
+        if b.__bound__:
             return issubtype(a, b.__bound__)
         if b.__constraints__:
-            return any(issubtype(a, constraint) for constraint in b.__constraints__)
+            return any(issubtype(a, c) for c in b.__constraints__)
         return True
 
     a_origin = reveal_origin(a)
@@ -149,65 +155,135 @@ def issubtype(a: Any, b: Any) -> bool:
     a_args = typing.get_args(a)
     b_args = typing.get_args(b)
 
+    if a_args == (Ellipsis,):
+        a_args = tuple()
+    if b_args == (Ellipsis,):
+        b_args = tuple()
+
     if a_origin is None or b_origin is None:
-        raise ValueError(f"a and b must be type hint, but got {a} and {b}")
+        raise TypeError(f"Cannot determine origin of {a} or {b}")
 
-    if a_origin == typing.Union:
-        return all(issubtype(a_arg, b) for a_arg in a_args)
-    if b_origin == typing.Union:
-        return any(issubtype(a, b_arg) for b_arg in b_args)
+    if a_origin in (typing.Union, UnionType):
+        return all(issubtype(arg, b) for arg in a_args)
+    if b_origin in (typing.Union, UnionType):
+        return any(issubtype(a, arg) for arg in b_args)
 
-    if a_origin is b_origin or issubclass(a_origin, b_origin):
-        if a_args == b_args:
-            return True
+    if not issubtype(a_origin, b_origin):
+        return False
+
+    if a_args == () and b_args == ():
+        return True
+
+    if b_origin is collections.abc.Callable:
         if b_args == ():
             return True
-        if (
-            issubclass(a_origin, tuple)
-            and len(a_args) == 2
-            and a_args[1] == Ellipsis
-            and issubclass(b_origin, Sequence)
-            and len(b_args) == 1
-        ):
-            return issubtype(a_args[0], b_args[0])
-        if b_origin is abc.Callable:
-            if a_origin is abc.Callable:
-                a_callable_args = a_args[0]
-                a_callable_return_type = a_args[1]
-            else:
-                call_method = getattr(a_origin, "__call__", None)
-                if call_method is None:
-                    return False
-                if not b_args:
-                    return True
-                a_callable_signature = inspect.signature(call_method)
-                a_callable_args = tuple(
-                    p.annotation
-                    for i, (k, p) in enumerate(a_callable_signature.parameters.items())
-                    if not (i == 0 and k == "self")
-                )
-                a_callable_return_type = (
-                    a_callable_signature.return_annotation
-                    if a_callable_signature.return_annotation != inspect._empty
-                    else Any
-                )
-            b_callable_args = b_args[0]
-            b_callable_return_type = b_args[1]
-            a_callable_return_type = NoneType if a_callable_return_type is None else a_callable_return_type
-            b_callable_return_type = NoneType if b_callable_return_type is None else b_callable_return_type
-            if not issubtype(a_callable_return_type, b_callable_return_type):
+        if a_origin is collections.abc.Callable:
+            a_call_args = a_args[0]
+            a_call_ret = a_args[1]
+            if a_call_args is Ellipsis:
                 return False
-            if b_callable_args == Ellipsis:
-                return True
-            if len(a_callable_args) != len(b_callable_args):
+            a_call_required_args = a_call_args
+        else:
+            call_method = getattr(a_origin, "__call__", None)
+            if call_method is None:
                 return False
-            return all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_callable_args, b_callable_args))
+            a_call_signature = inspect.signature(call_method)
+            a_call_args = tuple(
+                param.annotation
+                for i, param in enumerate(a_call_signature.parameters.values())
+                if not (i == 0 and param.name == "self")
+            )
+            a_call_ret = (
+                a_call_signature.return_annotation if a_call_signature.return_annotation != inspect._empty else Any
+            )
+            a_call_required_args = tuple(
+                param.annotation
+                for i, param in enumerate(a_call_signature.parameters.values())
+                if not (i == 0 and param.name == "self") and param.default == inspect._empty
+            )
+        b_call_args = b_args[0]
+        b_call_ret = b_args[1]
+        a_call_ret = NoneType if a_call_ret is None else a_call_ret
+        b_call_ret = NoneType if b_call_ret is None else b_call_ret
+        if not issubtype(a_call_ret, b_call_ret):
+            return False
+        if b_call_args == Ellipsis:
+            return True
+        if len(a_call_args) < len(b_call_args):
+            return False
+        if len(a_call_required_args) > len(b_call_args):
+            return False
+        return all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_call_args, b_call_args))
 
+    if a_origin == b_origin:
+        if b_args == ():
+            return True
+        if a_args == ():
+            return False
+        if a_args == b_args:
+            return True
+        if a_origin is tuple:
+            assert issubclass(b_origin, tuple)
+            if len(a_args) == 2 and a_args[1] is Ellipsis:
+                return len(b_args) == 2 and b_args[1] is Ellipsis and issubtype(a_args[0], b_args[0])
+            if len(b_args) == 2 and b_args[1] is Ellipsis:
+                return all(issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+            return len(a_args) == len(b_args) and all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
+        if a_origin is collections.abc.Callable:
+            assert b_origin == collections.abc.Callable
+            assert len(a_args) == len(b_args) == 2
+            a_params, a_ret = a_args
+            b_params, b_ret = b_args
+            if not issubtype(a_ret, b_ret):
+                return False
+            if a_params is Ellipsis:
+                return b_params is Ellipsis
+            if b_params is Ellipsis:
+                return True
+            if len(a_params) != len(b_params):
+                return False
+            return all(issubtype(b_param, a_param) for a_param, b_param in zip(a_params, b_params))
         if len(a_args) != len(b_args):
             return False
-        if a_args and b_args:
-            if all(issubtype(x, y) for x, y in zip(a_args, b_args)):
+        return all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
+
+    if a_origin is tuple and issubclass(b_origin, collections.abc.Sequence):
+        if b_origin is tuple:
+            if len(a_args) == 2 and a_args[1] is Ellipsis:
+                return len(b_args) == 2 and b_args[1] is Ellipsis and issubtype(a_args[0], b_args[0])
+            if len(b_args) == 2 and b_args[1] is Ellipsis:
+                return all(issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+            return len(a_args) == len(b_args) and all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
+        if b_origin is collections.abc.Sequence:
+            if b_args == ():
                 return True
+            return all(issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+        return False
+
+    if a_origin.__module__ in ("builtins", "collections.abc") and b_origin.__module__ in (
+        "builtins",
+        "collections.abc",
+    ):
+        # We assume that args of builtin type and  collections.abc generics are directly comparable
+        if b_args == ():
+            return True
+        return all(issubtype(a_args[0], b_args[0]) for a_arg in a_args)
+
+    a_bases = {base for base in getattr(a_origin, "__orig_bases__", ()) if issubtype(base, b_origin)}
+    if not a_bases:
+        return False
+
+    a_param_maps = {
+        param: arg
+        for param, arg in itertools.zip_longest(getattr(a_origin, "__parameters__", ()), a_args, fillvalue=Any)
+    }
+
+    for a_base in a_bases:
+        a_base_params = getattr(a_base, "__parameters__", ())
+        if a_base_params:
+            a_base = a_base[tuple(a_param_maps.get(param, Any) for param in a_base_params)]
+        if issubtype(a_base, b):
+            return True
 
     return False
 
