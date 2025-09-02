@@ -534,10 +534,11 @@ class ColtBuilder:
                 for key, val in config.items()
             }
 
-        if isinstance(origin or annotation, TypeVar):
+        if not origin and isinstance(annotation, TypeVar):
             return self._build(
                 config,
                 path,
+                annotation.__bound__,
                 context=context,
                 skip_construction=skip_construction,
             )
