@@ -5,6 +5,7 @@ import itertools
 import pkgutil
 import sys
 import typing
+from contextlib import suppress
 from typing import (
     Any,
     Dict,
@@ -133,7 +134,8 @@ def issubtype(a: Any, b: Any) -> bool:
         return True
 
     if isinstance(a, type) and isinstance(b, type):
-        return issubclass(a, b)
+        with suppress(TypeError):
+            return issubclass(a, b)
 
     if isinstance(a, TypeVar):
         if a is b:
