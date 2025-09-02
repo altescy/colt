@@ -114,7 +114,7 @@ def test_update_field(
         (Iterable[int], Iterable[str], False),
         (list, Iterable[int], True),
         (Iterable[int], list, False),
-        (list[str], Iterable[_T], True),  # pyright: ignore[reportGeneralTypeIssues]
+        (List[str], Iterable[_T], True),  # pyright: ignore[reportGeneralTypeIssues]
         (Box[int], Box[int], True),
         (Box[int], Box[str], False),
         (Box[int], Box, True),
