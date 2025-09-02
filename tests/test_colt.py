@@ -403,7 +403,7 @@ def test_build_generic_type() -> None:
     class BaseModel(Generic[ParamsT], colt.Registrable): ...
 
     @BaseModel.register("mymodel")
-    class MyModel(BaseModel["MyModel.Params"]):
+    class MyModel(BaseModel["MyModel.Params"]):  # pyright: ignore[reportGeneralTypeIssues]
         @dataclasses.dataclass
         class Params:
             name: str
@@ -430,7 +430,7 @@ def test_build_lazy_generic_type() -> None:
     class BaseModel(Generic[ParamsT], colt.Registrable): ...
 
     @BaseModel.register("mymodel")
-    class MyModel(BaseModel["MyModel.Params"]):
+    class MyModel(BaseModel["MyModel.Params"]):  # pyright: ignore[reportGeneralTypeIssues]
         @dataclasses.dataclass
         class Params:
             name: str
@@ -464,7 +464,7 @@ def test_build_multi_generic_type() -> None:
     class BaseModel(Generic[InputT, ParamsT], colt.Registrable): ...
 
     @BaseModel.register("mymodel")
-    class MyModel(BaseModel[Item, "MyModel.Params"]):
+    class MyModel(BaseModel[Item, "MyModel.Params"]):  # pyright: ignore[reportGeneralTypeIssues]
         @dataclasses.dataclass
         class Params:
             name: str
@@ -501,7 +501,7 @@ def test_build_multi_inherited_generic_type() -> None:
     class BaseItemModel(BaseModel[Item, ParamsT], Generic[ParamsT]): ...
 
     @BaseModel.register("mymodel")
-    class MyModel(BaseItemModel["MyModel.Params"]):
+    class MyModel(BaseItemModel["MyModel.Params"]):  # pyright: ignore[reportGeneralTypeIssues]
         @dataclasses.dataclass
         class Params:
             name: str
