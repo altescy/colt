@@ -15,7 +15,7 @@ test:
 .PHONY: lint
 lint:
 	PYTHONPATH=$(PWD) $(RUFF) check
-	PYTHONPATH=$(PWD) $(PYRIGHT) $(MODULE)
+	PYTHONPATH=$(PWD) $(PYRIGHT)
 
 .PHONY: format
 format:
