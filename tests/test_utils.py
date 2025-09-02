@@ -4,6 +4,8 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
+    Iterable,
     List,
     NamedTuple,
     Optional,
@@ -22,6 +24,15 @@ if sys.version_info >= (3, 9):
     from collections.abc import Iterator
 else:
     from typing import Iterator
+
+_S = TypeVar("_S")
+_T = TypeVar("_T")
+
+
+class Box(Generic[_T]): ...
+
+
+class BoxWithExtra(Box[_S], Generic[_S, _T]): ...
 
 
 class Int2Str:
@@ -74,7 +85,10 @@ def test_update_field(
         (Tuple[str, ...], Tuple[str, ...], True),
         (Tuple[int, ...], Tuple[str, ...], False),
         (Tuple[int, ...], Tuple[Any, ...], True),
+        (Tuple[int, ...], Tuple[int], False),
+        (Tuple[int, ...], Tuple[int, str], False),
         (Tuple[int, ...], Sequence[int], True),
+        (Tuple[int, int], Sequence[int], True),
         (int, Optional[int], True),
         (Optional[int], int, False),
         (Union[int, str], Union[int, str, List[str]], True),
@@ -96,7 +110,32 @@ def test_update_field(
         (Callable[[Union[int, str]], str], Callable[..., str], True),
         (Int2Str, Callable[[int], str], True),
         (Int2Str, Callable[[str], str], False),
-    ],
+        (Iterable[int], Iterable[int], True),
+        (Iterable[int], Iterable[str], False),
+        (list, Iterable[int], True),
+        (Iterable[int], list, False),
+        (List[str], Iterable[_T], True),  # pyright: ignore[reportGeneralTypeIssues]
+        (Box[int], Box[int], True),
+        (Box[int], Box[str], False),
+        (Box[int], Box, True),
+        (Box, Box[int], False),
+        (BoxWithExtra[int, str], Box[int], True),
+        (Box[int], BoxWithExtra[int, str], False),
+        (BoxWithExtra[int, str], BoxWithExtra[int, str], True),
+        (BoxWithExtra[int, str], BoxWithExtra[int, int], False),
+        (BoxWithExtra[int, str], Box, True),
+        (Box, BoxWithExtra[int, str], False),
+    ]
+    + (
+        [
+            (list[int], Iterable[int] | None, True),
+            (list[int], Iterable[int] | Iterable[str], True),
+            (list[int], Iterable[int | str], True),
+            (list[int], Iterable[str | dict], False),
+        ]
+        if sys.version_info >= (3, 10)
+        else []
+    ),
 )
 def test_issubtype(a: Any, b: Any, expected: bool) -> None:
     assert issubtype(a, b) == expected
