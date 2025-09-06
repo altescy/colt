@@ -125,7 +125,21 @@ def reveal_origin(a: Any) -> Optional[Any]:
     return typing.get_origin(a)
 
 
-def issubtype(a: Any, b: Any) -> bool:
+def issubtype(
+    a: Any,
+    b: Any,
+    globalns: Optional[Dict[str, Any]] = None,
+    localns: Optional[Dict[str, Any]] = None,
+) -> bool:
+    if isinstance(a, ForwardRef):
+        if isinstance(b, type):
+            localns = infer_scope(b)
+        a = evaluate_forward_refs(a, globalns or {}, localns or {})
+    if isinstance(b, ForwardRef):
+        if isinstance(a, type):
+            localns = infer_scope(a)
+        b = evaluate_forward_refs(b, globalns or {}, localns or {})
+
     if a is b:
         return True
     if a == b:
@@ -137,19 +151,22 @@ def issubtype(a: Any, b: Any) -> bool:
         with suppress(TypeError):
             return issubclass(a, b)
 
+    def _issubtype(a: Any, b: Any) -> bool:
+        return issubtype(a, b, globalns=globalns, localns=localns)
+
     if isinstance(a, TypeVar):
         if a is b:
             return True
         if a.__bound__:
-            return issubtype(a.__bound__, b)
+            return _issubtype(a.__bound__, b)
         if a.__constraints__:
-            return all(issubtype(c, b) for c in a.__constraints__)
+            return all(_issubtype(c, b) for c in a.__constraints__)
         return True
     if isinstance(b, TypeVar):
         if b.__bound__:
-            return issubtype(a, b.__bound__)
+            return _issubtype(a, b.__bound__)
         if b.__constraints__:
-            return any(issubtype(a, c) for c in b.__constraints__)
+            return any(_issubtype(a, c) for c in b.__constraints__)
         return True
 
     a_origin = reveal_origin(a)
@@ -166,11 +183,11 @@ def issubtype(a: Any, b: Any) -> bool:
         raise TypeError(f"Cannot determine origin of {a} or {b}")
 
     if a_origin in (typing.Union, UnionType):
-        return all(issubtype(arg, b) for arg in a_args)
+        return all(_issubtype(arg, b) for arg in a_args)
     if b_origin in (typing.Union, UnionType):
-        return any(issubtype(a, arg) for arg in b_args)
+        return any(_issubtype(a, arg) for arg in b_args)
 
-    if not issubtype(a_origin, b_origin):
+    if not _issubtype(a_origin, b_origin):
         return False
 
     if a_args == () and b_args == ():
@@ -207,7 +224,7 @@ def issubtype(a: Any, b: Any) -> bool:
         b_call_ret = b_args[1]
         a_call_ret = NoneType if a_call_ret is None else a_call_ret
         b_call_ret = NoneType if b_call_ret is None else b_call_ret
-        if not issubtype(a_call_ret, b_call_ret):
+        if not _issubtype(a_call_ret, b_call_ret):
             return False
         if b_call_args == Ellipsis:
             return True
@@ -215,7 +232,7 @@ def issubtype(a: Any, b: Any) -> bool:
             return False
         if len(a_call_required_args) > len(b_call_args):
             return False
-        return all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_call_args, b_call_args))
+        return all(_issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_call_args, b_call_args))
 
     if a_origin == b_origin:
         if b_args == ():
@@ -227,16 +244,16 @@ def issubtype(a: Any, b: Any) -> bool:
         if a_origin is tuple:
             assert issubclass(b_origin, tuple)
             if len(a_args) == 2 and a_args[1] is Ellipsis:
-                return len(b_args) == 2 and b_args[1] is Ellipsis and issubtype(a_args[0], b_args[0])
+                return len(b_args) == 2 and b_args[1] is Ellipsis and _issubtype(a_args[0], b_args[0])
             if len(b_args) == 2 and b_args[1] is Ellipsis:
-                return all(issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
-            return len(a_args) == len(b_args) and all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
+                return all(_issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+            return len(a_args) == len(b_args) and all(_issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
         if a_origin is collections.abc.Callable:
             assert b_origin == collections.abc.Callable
             assert len(a_args) == len(b_args) == 2
             a_params, a_ret = a_args
             b_params, b_ret = b_args
-            if not issubtype(a_ret, b_ret):
+            if not _issubtype(a_ret, b_ret):
                 return False
             if a_params is Ellipsis:
                 return b_params is Ellipsis
@@ -244,22 +261,22 @@ def issubtype(a: Any, b: Any) -> bool:
                 return True
             if len(a_params) != len(b_params):
                 return False
-            return all(issubtype(b_param, a_param) for a_param, b_param in zip(a_params, b_params))
+            return all(_issubtype(b_param, a_param) for a_param, b_param in zip(a_params, b_params))
         if len(a_args) != len(b_args):
             return False
-        return all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
+        return all(_issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
 
     if a_origin is tuple and issubclass(b_origin, collections.abc.Sequence):
         if b_origin is tuple:
             if len(a_args) == 2 and a_args[1] is Ellipsis:
-                return len(b_args) == 2 and b_args[1] is Ellipsis and issubtype(a_args[0], b_args[0])
+                return len(b_args) == 2 and b_args[1] is Ellipsis and _issubtype(a_args[0], b_args[0])
             if len(b_args) == 2 and b_args[1] is Ellipsis:
-                return all(issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
-            return len(a_args) == len(b_args) and all(issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
+                return all(_issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+            return len(a_args) == len(b_args) and all(_issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
         if b_origin is collections.abc.Sequence:
             if b_args == ():
                 return True
-            return all(issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+            return all(_issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
         return False
 
     if a_origin.__module__ in ("builtins", "collections.abc") and b_origin.__module__ in (
@@ -269,9 +286,9 @@ def issubtype(a: Any, b: Any) -> bool:
         # We assume that args of builtin type and  collections.abc generics are directly comparable
         if b_args == ():
             return True
-        return all(issubtype(a_args[0], b_args[0]) for a_arg in a_args)
+        return all(_issubtype(a_args[0], b_args[0]) for a_arg in a_args)
 
-    a_bases = {base for base in getattr(a_origin, "__orig_bases__", ()) if issubtype(base, b_origin)}
+    a_bases = {base for base in getattr(a_origin, "__orig_bases__", ()) if _issubtype(base, b_origin)}
     if not a_bases:
         return False
 
@@ -284,7 +301,7 @@ def issubtype(a: Any, b: Any) -> bool:
         a_base_params = getattr(a_base, "__parameters__", ())
         if a_base_params:
             a_base = a_base[tuple(a_param_maps.get(param, Any) for param in a_base_params)]
-        if issubtype(a_base, b):
+        if _issubtype(a_base, b):
             return True
 
     return False
