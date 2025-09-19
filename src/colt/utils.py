@@ -190,7 +190,7 @@ def issubtype(
     if not _issubtype(a_origin, b_origin):
         return False
 
-    if a_args == () and b_args == ():
+    if b_args == ():
         return True
 
     if b_origin is collections.abc.Callable:
