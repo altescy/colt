@@ -279,11 +279,7 @@ def issubtype(
             return all(_issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
         return False
 
-    if a_origin.__module__ in ("builtins", "collections.abc") and b_origin.__module__ in (
-        "builtins",
-        "collections.abc",
-    ):
-        # We assume that args of builtin type and  collections.abc generics are directly comparable
+    if not hasattr(a_origin, "__parameters__") and not hasattr(b_origin, "__parameters__"):
         if b_args == ():
             return True
         return all(_issubtype(a_args[0], b_args[0]) for a_arg in a_args)
