@@ -56,10 +56,12 @@ from colt.registrable import Registrable
 from colt.types import ParamPath
 from colt.utils import (
     evaluate_forward_refs,
+    get_new_type_constructor,
     get_path_name,
     get_typevar_map,
     infer_scope,
     is_namedtuple,
+    is_new_type,
     is_typeddict,
     issubtype,
     remove_optional,
@@ -551,6 +553,9 @@ class ColtBuilder:
             )
         else:
             constructor = origin or annotation  # type: ignore
+
+        if constructor and is_new_type(constructor):
+            constructor = get_new_type_constructor(constructor)  # type: ignore
 
         if origin == abc.Callable:
             if not issubtype(constructor, annotation):
