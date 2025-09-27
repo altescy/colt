@@ -43,7 +43,7 @@ else:
     class UnionType: ...
 
 
-_NewTypeT = TypeVar("_NewTypeT", bound=NewType)
+_NewTypeT = TypeVar("_NewTypeT", bound=NewType)  # pyright: ignore[reportGeneralTypeIssues]
 
 
 def import_submodules(package_name: str) -> None:
@@ -401,7 +401,7 @@ def evaluate_forward_refs(ref: ForwardRef, globalns: Dict[str, Any], localns: Di
 
 
 def get_new_type_constructor(type_: _NewTypeT) -> Callable[..., _NewTypeT]:
-    if isinstance(type_.__supertype__, NewType):
+    if isinstance(type_.__supertype__, NewType):  # pyright: ignore[reportArgumentType]
         _super_constructor = get_new_type_constructor(type_.__supertype__)
     elif isinstance(type_.__supertype__, type):
 
