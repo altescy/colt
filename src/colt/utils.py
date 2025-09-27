@@ -426,7 +426,6 @@ def get_new_type_constructor(type_: _NewTypeT) -> Callable[..., _NewTypeT]:
 
     annotations = typing.get_type_hints(_super_constructor)
     annotations["return"] = type_
-    print(annotations)
 
     _constructor.__annotations__ = annotations
 
