@@ -56,6 +56,7 @@ from colt.registrable import Registrable
 from colt.types import ParamPath
 from colt.utils import (
     evaluate_forward_refs,
+    get_new_type_constructor,
     get_path_name,
     get_typevar_map,
     infer_scope,
@@ -212,6 +213,16 @@ class ColtBuilder:
             )
             for i, val in enumerate(args_config)
         ]
+
+        if isinstance(constructor, typing.NewType):
+
+            def _constructor_func(*args: Any, **kwargs: Any) -> Any:
+                assert isinstance(constructor, typing.NewType)
+                return constructor(constructor.__supertype__(*args, **kwargs))
+
+            _constructor_func.__annotations__ = typing.get_type_hints(constructor.__supertype__.__init__)
+
+            constructor = _constructor_func  # type: ignore[assignment]
 
         if isinstance(constructor, type):
             try:  # type: ignore[unreachable]
@@ -551,6 +562,9 @@ class ColtBuilder:
             )
         else:
             constructor = origin or annotation  # type: ignore
+
+        if constructor and isinstance(constructor, typing.NewType):
+            constructor = get_new_type_constructor(constructor)  # type: ignore
 
         if origin == abc.Callable:
             if not issubtype(constructor, annotation):

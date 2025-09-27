@@ -8,12 +8,14 @@ import typing
 from contextlib import suppress
 from typing import (
     Any,
+    Callable,
     Dict,
     ForwardRef,
     Hashable,
     Iterable,
     Iterator,
     List,
+    NewType,
     Optional,
     Sequence,
     Type,
@@ -39,6 +41,9 @@ else:
     NoneType = type(None)
 
     class UnionType: ...
+
+
+_NewTypeT = TypeVar("_NewTypeT", bound=NewType)
 
 
 def import_submodules(package_name: str) -> None:
@@ -393,3 +398,30 @@ def evaluate_forward_refs(ref: ForwardRef, globalns: Dict[str, Any], localns: Di
     if sys.version_info >= (3, 9):
         return ref._evaluate(globalns, localns, frozenset())  # type: ignore[call-arg]
     return ref._evaluate(globalns, localns)  # type: ignore[call-arg]
+
+
+def get_new_type_constructor(type_: _NewTypeT) -> Callable[..., _NewTypeT]:
+    if isinstance(type_.__supertype__, NewType):
+        _super_constructor = get_new_type_constructor(type_.__supertype__)
+    elif isinstance(type_.__supertype__, type):
+
+        def _super_constructor(*args, **kwargs):
+            return type_.__supertype__(*args, **kwargs)
+
+        if hasattr(type_.__supertype__, "__annotations__"):
+            _super_constructor.__annotations__ = type_.__supertype__.__annotations__
+        else:
+            _super_constructor.__annotations__ = typing.get_type_hints(type_.__supertype__.__init__)
+    else:
+        raise TypeError("NewType's supertype must be a type or NewType")
+
+    def _constructor(*args, **kwargs):
+        return type_(_super_constructor(*args, **kwargs))
+
+    annotations = typing.get_type_hints(_super_constructor)
+    annotations["return"] = type_
+    print(annotations)
+
+    _constructor.__annotations__ = annotations
+
+    return _constructor

@@ -14,6 +14,7 @@ from typing import (
     MutableMapping,
     MutableSequence,
     NamedTuple,
+    NewType,
     Optional,
     Sequence,
     Set,
@@ -541,7 +542,7 @@ def test_build_with_annotated() -> None:
     assert obj.foo.x == "hello"
 
 
-def test_numerical_value_compatiblity() -> None:
+def test_numerical_value_compatibility() -> None:
     class Foo:
         def __init__(self, x: float, y: complex) -> None:
             self.x = x
@@ -583,3 +584,34 @@ def test_abc_callable() -> None:
 def test_mapping_or_typekey() -> None:
     obj = colt.build({"@type": "int2str"}, Union[Mapping[int, str], Callable[[int], str]])  # type: ignore[call-overload]
     assert isinstance(obj, Int2Str)
+
+
+def test_newtype() -> None:
+    UserId = NewType("UserId", int)
+
+    class Vector2D(NamedTuple):
+        x: float
+        y: float
+
+    Coordinate2D = NewType("Coordinate2D", Vector2D)
+
+    Location = NewType("Location", Coordinate2D)
+
+    class GeoInfo(NamedTuple):
+        location: Location
+
+    UserGeoInfo = NewType("UserGeoInfo", GeoInfo)
+
+    class User:
+        def __init__(self, user_id: UserId, geo_info: UserGeoInfo) -> None:
+            self.user_id = user_id
+            self.geo_info = geo_info
+
+    config = {"user_id": 123, "geo_info": {"location": {"x": 1.0, "y": 2.0}}}
+    user = colt.build(config, User)
+
+    assert isinstance(user, User)
+    assert isinstance(user.user_id, int)
+    assert user.user_id == 123
+    assert isinstance(user.geo_info.location, Vector2D)
+    assert user.geo_info.location == (1.0, 2.0)
