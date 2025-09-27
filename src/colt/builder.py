@@ -214,16 +214,6 @@ class ColtBuilder:
             for i, val in enumerate(args_config)
         ]
 
-        if isinstance(constructor, typing.NewType):
-
-            def _constructor_func(*args: Any, **kwargs: Any) -> Any:
-                assert isinstance(constructor, typing.NewType)
-                return constructor(constructor.__supertype__(*args, **kwargs))
-
-            _constructor_func.__annotations__ = typing.get_type_hints(constructor.__supertype__.__init__)
-
-            constructor = _constructor_func  # type: ignore[assignment]
-
         if isinstance(constructor, type):
             try:  # type: ignore[unreachable]
                 if is_typeddict(constructor):
@@ -563,7 +553,7 @@ class ColtBuilder:
         else:
             constructor = origin or annotation  # type: ignore
 
-        if constructor and isinstance(constructor, typing.NewType):
+        if constructor and isinstance(constructor, typing.NewType):  # pyright: ignore[reportArgumentType]
             constructor = get_new_type_constructor(constructor)  # type: ignore
 
         if origin == abc.Callable:
