@@ -400,9 +400,15 @@ def evaluate_forward_refs(ref: ForwardRef, globalns: Dict[str, Any], localns: Di
     return ref._evaluate(globalns, localns)  # type: ignore[call-arg]
 
 
+def is_new_type(type_: Any) -> bool:
+    if sys.version_info >= (3, 10):
+        return isinstance(type_, NewType)  # pyright: ignore[reportArgumentType]
+    return callable(type_) and hasattr(type_, "__supertype__")
+
+
 def get_new_type_constructor(type_: _NewTypeT) -> Callable[..., _NewTypeT]:
-    if isinstance(type_.__supertype__, NewType):  # pyright: ignore[reportArgumentType]
-        _super_constructor = get_new_type_constructor(type_.__supertype__)
+    if is_new_type(type_.__supertype__):
+        _super_constructor = get_new_type_constructor(type_.__supertype__)  # pyright: ignore[reportArgumentType]
     elif isinstance(type_.__supertype__, type):
 
         def _super_constructor(*args, **kwargs):

@@ -61,6 +61,7 @@ from colt.utils import (
     get_typevar_map,
     infer_scope,
     is_namedtuple,
+    is_new_type,
     is_typeddict,
     issubtype,
     remove_optional,
@@ -553,7 +554,7 @@ class ColtBuilder:
         else:
             constructor = origin or annotation  # type: ignore
 
-        if constructor and isinstance(constructor, typing.NewType):  # pyright: ignore[reportArgumentType]
+        if constructor and is_new_type(constructor):
             constructor = get_new_type_constructor(constructor)  # type: ignore
 
         if origin == abc.Callable:
