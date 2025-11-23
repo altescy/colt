@@ -3,16 +3,9 @@ import dataclasses
 import inspect
 import string
 import typing
-from collections.abc import (
-    Callable,
-    Mapping,
-    MutableMapping,
-    MutableSequence,
-    Sequence,
-    Set,
-)
+from collections import abc
 from enum import Enum
-from typing import Any, Dict, Final, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, Final, List, Literal, Mapping, Optional, Union
 
 from colt import _constants
 from colt._compat import NoneType, UnionType
@@ -92,9 +85,9 @@ class JsonSchemaGenerator:
                 schema = {"enum": [member.value for member in target]}
             elif target in (int, float, str, bool, NoneType):
                 schema = {"type": _get_json_type(target)}
-            elif target in (list, tuple, set, List, Sequence, MutableSequence, Set):
+            elif target in (list, tuple, set, List, abc.Sequence, abc.MutableSequence, abc.Set):
                 schema = {"type": "array"}
-            elif target in (dict, Dict, Mapping, MutableMapping):
+            elif target in (dict, Dict, abc.Mapping, abc.MutableMapping):
                 schema = {"type": "object"}
             else:
                 ref_name = _get_ref_name(target)
@@ -195,7 +188,7 @@ class JsonSchemaGenerator:
                 schema = (
                     {"anyOf": types} if len(types) > 1 else types[0]
                 )  # if only one type excluding None, no need to use array
-            elif origin in (list, List, Sequence, MutableSequence):  # for List
+            elif origin in (list, List, abc.Sequence, abc.MutableSequence):  # for List
                 schema = {"type": "array"}
                 if args:
                     schema["items"] = self._generate(
@@ -204,7 +197,7 @@ class JsonSchemaGenerator:
                         definitions=definitions,
                         path=path,
                     )
-            elif origin in (dict, Dict, Mapping, MutableMapping):  # for Dict
+            elif origin in (dict, Dict, abc.Mapping, abc.MutableMapping):  # for Dict
                 schema = {"type": "object"}
                 if len(args) == 2 and args[0] is str:
                     schema["additionalProperties"] = self._generate(
