@@ -33,11 +33,13 @@ class JsonSchemaGenerator:
         *,
         default: Union[Mapping[str, Any], Callable[[Any], Dict[str, Any]]] = _default,
         callback: Optional[Callable[[Optional[str], Dict[str, Any]], Dict[str, Any]]] = None,
+        strict: bool = False,
         typekey: str = _constants.DEFAULT_TYPEKEY,
         argskey: str = _constants.DEFAULT_ARGSKEY,
     ) -> None:
         self._default = default
         self._callback = callback
+        self._strict = strict
         self._typekey = typekey
         self._argskey = argskey
 
@@ -258,6 +260,17 @@ class JsonSchemaGenerator:
         if extra_properties and schema.get("type") == "object":
             schema.setdefault("properties", {}).update(extra_properties)
             schema.setdefault("required", []).extend(extra_properties.keys())
+        if not self._strict:
+            schema = {
+                "anyOf": [
+                    schema,
+                    {
+                        "type": "object",
+                        "properties": {self._typekey: {"type": "string"}},
+                        "additionalProperties": True,
+                    },
+                ]
+            }
         if self._callback:
             schema = self._callback(path, schema)
 

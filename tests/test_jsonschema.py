@@ -63,6 +63,6 @@ class TestJsonSchemaGeneratorWithClass:
     )
     @staticmethod
     def test_generate_schema_with_class(target, expected_schema):
-        generator = JsonSchemaGenerator()
+        generator = JsonSchemaGenerator(strict=True)
         schema = generator(target)
         assert schema == expected_schema
