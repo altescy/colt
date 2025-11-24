@@ -227,28 +227,69 @@ class JsonSchemaGenerator:
         elif callable(target):
             sig = inspect.signature(target)
             annotations = typing.get_type_hints(target)
-            params = [
+            positional_params = [
+                (name, param)
+                for pos, (name, param) in enumerate(sig.parameters.items())
+                if not (pos == 0 and name in ("self", "target"))
+                and param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.VAR_POSITIONAL)
+            ]
+            keyword_params = [
                 (name, param)
                 for pos, (name, param) in enumerate(sig.parameters.items())
                 if not (pos == 0 and name in ("self", "target"))
                 and param.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
             ]
+            var_keyword_param = next(
+                (param for name, param in sig.parameters.items() if param.kind == inspect.Parameter.VAR_KEYWORD),
+                None,
+            )
+            properties = {
+                name: self._generate(
+                    annotations.get(
+                        name,
+                        param.annotation if param.annotation is not inspect.Parameter.empty else Any,
+                    ),
+                    root=False,
+                    definitions=definitions,
+                    path=_concat_path(path, name),
+                )
+                for name, param in keyword_params
+            }
+            if positional_params:
+                properties[self._argskey] = {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            self._generate(
+                                annotations.get(
+                                    name,
+                                    param.annotation if param.annotation is not inspect.Parameter.empty else Any,
+                                ),
+                                root=False,
+                                definitions=definitions,
+                                path=_concat_path(path, name),
+                            )
+                            for name, param in positional_params
+                        ]
+                    },
+                }
             schema = {
                 "type": "object",
-                "properties": {
-                    name: self._generate(
-                        annotations.get(
-                            name,
-                            param.annotation if param.annotation is not inspect.Parameter.empty else Any,
-                        ),
-                        root=False,
-                        definitions=definitions,
-                        path=_concat_path(path, name),
-                    )
-                    for name, param in params
-                },
-                "required": [name for name, param in params if param.default is inspect.Parameter.empty],
+                "properties": properties,
+                "required": [name for name, param in keyword_params if param.default is inspect.Parameter.empty],
             }
+            if var_keyword_param:
+                schema["additionalProperties"] = self._generate(
+                    annotations.get(
+                        var_keyword_param.name,
+                        var_keyword_param.annotation
+                        if var_keyword_param.annotation is not inspect.Parameter.empty
+                        else Any,
+                    ),
+                    root=False,
+                    definitions=definitions,
+                    path=_concat_path(path, var_keyword_param.name),
+                )
 
         if schema is None:
             schema = self._default(target) if callable(self._default) else dict(self._default)

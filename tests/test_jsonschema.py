@@ -66,3 +66,37 @@ class TestJsonSchemaGeneratorWithClass:
         generator = JsonSchemaGenerator(strict=True)
         schema = generator(target)
         assert schema == expected_schema
+
+
+class TestJsonSchemaGeneratorWithVariableLengthArgs:
+    @staticmethod
+    def sample_function(name: str, /, *args: int, param: int, **kwargs: str) -> None:
+        pass
+
+    @pytest.mark.parametrize(
+        "target, expected_schema",
+        [
+            (
+                sample_function,
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$defs": {},
+                    "type": "object",
+                    "properties": {
+                        "param": {"type": "integer"},
+                        "*": {
+                            "type": "array",
+                            "items": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+                        },
+                    },
+                    "additionalProperties": {"type": "string"},
+                    "required": ["param"],
+                },
+            ),
+        ],
+    )
+    @staticmethod
+    def test_generate_schema_with_variable_length_args(target, expected_schema):
+        generator = JsonSchemaGenerator(strict=True)
+        schema = generator(target)
+        assert schema == expected_schema
