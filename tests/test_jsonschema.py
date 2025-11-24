@@ -1,6 +1,7 @@
 import pytest
 
 from colt.jsonschema import JsonSchemaGenerator
+from colt.registrable import Registrable
 
 
 class TestJsonSchemaGeneratorWithClass:
@@ -69,18 +70,19 @@ class TestJsonSchemaGeneratorWithClass:
 
 
 class TestJsonSchemaGeneratorWithVariableLengthArgs:
-    @staticmethod
-    def sample_function(name: str, /, *args: int, param: int, **kwargs: str) -> None:
-        pass
+    class Foo:
+        def __init__(self, name: str, /, *args: int, param: int, **kwargs: str) -> None:
+            pass
 
     @pytest.mark.parametrize(
         "target, expected_schema",
         [
             (
-                sample_function,
+                Foo,
                 {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$defs": {},
+                    "title": "TestJsonSchemaGeneratorWithVariableLengthArgs.Foo",
                     "type": "object",
                     "properties": {
                         "param": {"type": "integer"},
@@ -97,6 +99,77 @@ class TestJsonSchemaGeneratorWithVariableLengthArgs:
     )
     @staticmethod
     def test_generate_schema_with_variable_length_args(target, expected_schema):
+        generator = JsonSchemaGenerator(strict=True)
+        schema = generator(target)
+        assert schema == expected_schema
+
+
+class TestJsonSchemaGeneratorWithRegistrable:
+    class BaseModel(Registrable):
+        pass
+
+    @BaseModel.register("foo")
+    class Foo(BaseModel):
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+    @BaseModel.register("bar")
+    class Bar(BaseModel):
+        def __init__(self, value: int = 42) -> None:
+            self.value = value
+
+    class Composer:
+        def __init__(
+            self,
+            model: "TestJsonSchemaGeneratorWithRegistrable.BaseModel",
+            enabled: bool = False,
+        ) -> None:
+            self.model = model
+            self.enabled = enabled
+
+    @pytest.mark.parametrize(
+        "target, expected_schema",
+        [
+            (
+                Composer,
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "TestJsonSchemaGeneratorWithRegistrable.Composer",
+                    "$defs": {
+                        "test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__BaseModel": {
+                            "title": "TestJsonSchemaGeneratorWithRegistrable.BaseModel",
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "@type": {"const": "foo"},
+                                        "name": {"type": "string"},
+                                    },
+                                    "required": ["name", "@type"],
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "@type": {"const": "bar"},
+                                        "value": {"type": "integer"},
+                                    },
+                                    "required": ["@type"],
+                                },
+                            ],
+                        },
+                    },
+                    "type": "object",
+                    "properties": {
+                        "model": {"$ref": "#/$defs/test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__BaseModel"},
+                        "enabled": {"type": "boolean"},
+                    },
+                    "required": ["model"],
+                },
+            ),
+        ],
+    )
+    @staticmethod
+    def test_generate_schema_with_registrable(target, expected_schema):
         generator = JsonSchemaGenerator(strict=True)
         schema = generator(target)
         assert schema == expected_schema

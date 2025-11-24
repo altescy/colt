@@ -240,7 +240,7 @@ class JsonSchemaGenerator:
                 and param.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
             ]
             var_keyword_param = next(
-                (param for name, param in sig.parameters.items() if param.kind == inspect.Parameter.VAR_KEYWORD),
+                (param for param in sig.parameters.values() if param.kind == inspect.Parameter.VAR_KEYWORD),
                 None,
             )
             properties = {
