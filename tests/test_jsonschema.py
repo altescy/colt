@@ -88,7 +88,10 @@ class TestJsonSchemaGeneratorWithVariableLengthArgs:
                         "param": {"type": "integer"},
                         "*": {
                             "type": "array",
-                            "items": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+                            "prefixItems": [
+                                {"type": "string"},
+                            ],
+                            "items": {"type": "integer"},
                         },
                     },
                     "additionalProperties": {"type": "string"},

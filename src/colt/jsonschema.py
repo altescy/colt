@@ -251,9 +251,12 @@ class JsonSchemaGenerator:
             positional_params = [
                 (name, param)
                 for pos, (name, param) in enumerate(sig.parameters.items())
-                if not (pos == 0 and name in ("self", "target"))
-                and param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.VAR_POSITIONAL)
+                if not (pos == 0 and name in ("self", "target")) and param.kind == inspect.Parameter.POSITIONAL_ONLY
             ]
+            var_positional_param = next(
+                (param for param in sig.parameters.values() if param.kind == inspect.Parameter.VAR_POSITIONAL),
+                None,
+            )
             keyword_params = [
                 (name, param)
                 for pos, (name, param) in enumerate(sig.parameters.items())
@@ -276,23 +279,38 @@ class JsonSchemaGenerator:
                 )
                 for name, param in keyword_params
             }
-            if positional_params:
+            if positional_params or var_positional_param:
+                prefix_items = [
+                    self._generate(
+                        annotations.get(
+                            name,
+                            param.annotation if param.annotation is not inspect.Parameter.empty else Any,
+                        ),
+                        root=False,
+                        definitions=definitions,
+                        path=_concat_path(path, name),
+                    )
+                    for name, param in positional_params
+                ]
+                items = (
+                    self._generate(
+                        annotations.get(
+                            var_positional_param.name,
+                            var_positional_param.annotation
+                            if var_positional_param and var_positional_param.annotation is not inspect.Parameter.empty
+                            else Any,
+                        ),
+                        root=False,
+                        definitions=definitions,
+                        path=_concat_path(path, var_positional_param.name) if var_positional_param else path,
+                    )
+                    if var_positional_param
+                    else False
+                )
                 properties[self._argskey] = {
                     "type": "array",
-                    "items": {
-                        "anyOf": [
-                            self._generate(
-                                annotations.get(
-                                    name,
-                                    param.annotation if param.annotation is not inspect.Parameter.empty else Any,
-                                ),
-                                root=False,
-                                definitions=definitions,
-                                path=_concat_path(path, name),
-                            )
-                            for name, param in positional_params
-                        ]
-                    },
+                    **({"prefixItems": prefix_items} if prefix_items else {}),
+                    **({"items": items} if items is not False else {}),
                 }
             schema = {
                 "type": "object",
