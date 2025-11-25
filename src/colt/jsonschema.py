@@ -11,6 +11,7 @@ from colt import _constants
 from colt._compat import NoneType, UnionType
 from colt.lazy import Lazy
 from colt.registrable import Registrable
+from colt.types import ParamPath
 from colt.utils import is_namedtuple
 
 _JSON_SCHEMA: Final = "https://json-schema.org/draft/2020-12/schema"
@@ -32,7 +33,7 @@ class JsonSchemaGenerator:
         self,
         *,
         default: Union[Mapping[str, Any], Callable[[Any], Dict[str, Any]]] = _default,
-        callback: Optional[Callable[[Optional[str], Dict[str, Any]], Dict[str, Any]]] = None,
+        callback: Optional[Callable[[ParamPath, Dict[str, Any]], Dict[str, Any]]] = None,
         strict: bool = False,
         typekey: str = _constants.DEFAULT_TYPEKEY,
         argskey: str = _constants.DEFAULT_ARGSKEY,
@@ -69,7 +70,7 @@ class JsonSchemaGenerator:
         title: Optional[str] = None,
         description: Optional[str] = None,
         extra_properties: Optional[Mapping[str, Any]] = None,
-        path: Optional[str] = None,
+        path: ParamPath = (),
     ) -> Dict[str, Any]:
         if definitions is None:
             definitions = {}
@@ -338,10 +339,8 @@ def _safe_name(name: str) -> str:
     return "".join(c if c in _SAFE_CHARS else "__" for c in name)
 
 
-def _concat_path(path: Optional[str], segment: str) -> str:
-    if path:
-        return f"{path}.{segment}"
-    return segment
+def _concat_path(path: ParamPath, segment: Union[int, str]) -> ParamPath:
+    return path + (segment,)
 
 
 def _get_json_type(python_type: type) -> _JsonSchemaType:
