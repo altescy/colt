@@ -5,7 +5,7 @@ import string
 import typing
 from collections import abc
 from enum import Enum
-from typing import Any, Callable, Dict, Final, List, Literal, Mapping, Optional, Union
+from typing import Any, Callable, Dict, Final, List, Literal, Mapping, Optional, Tuple, Union
 
 from colt import _constants
 from colt._compat import NoneType, UnionType
@@ -200,6 +200,26 @@ class JsonSchemaGenerator:
                         definitions=definitions,
                         path=path,
                     )
+            elif origin in (tuple, Tuple):  # for Tuple
+                schema = {"type": "array"}
+                if args:
+                    if len(args) == 2 and args[1] is Ellipsis:
+                        schema["items"] = self._generate(
+                            args[0],
+                            root=False,
+                            definitions=definitions,
+                            path=path,
+                        )
+                    else:
+                        schema["prefixItems"] = [
+                            self._generate(
+                                arg,
+                                root=False,
+                                definitions=definitions,
+                                path=_concat_path(path, idx),
+                            )
+                            for idx, arg in enumerate(args)
+                        ]
             elif origin in (dict, Dict, abc.Mapping, abc.MutableMapping):  # for Dict
                 schema = {"type": "object"}
                 if len(args) == 2 and args[0] is str:
