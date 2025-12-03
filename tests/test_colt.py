@@ -95,6 +95,12 @@ class Int2Str:
         return str(value)
 
 
+@colt.register("partially_annotated_processor")
+class PartiallyAnnotatedProcessor:
+    def __call__(self, value, param=None) -> dict[str, Any]:
+        return {str(i): str(v) for i, v in enumerate(value)}
+
+
 def test_colt_with_type() -> None:
     config = {
         "bar": {
@@ -579,6 +585,29 @@ def test_abc_callable() -> None:
     executor = colt.build({"func": {"@type": "int2str"}}, Executor)
     assert isinstance(executor, Executor)
     assert isinstance(executor.func, Int2Str)
+
+
+def test_partially_annotated_callable() -> None:
+    from collections.abc import Callable
+
+    class Executor:
+        def __init__(self, func: Callable[[list[Any]], dict[str, Any]] | None = None) -> None:
+            self.func = func
+
+    executor = colt.build({"func": {"@type": "partially_annotated_processor"}}, Executor)
+    assert isinstance(executor, Executor)
+    assert isinstance(executor.func, PartiallyAnnotatedProcessor)
+
+
+def test_partially_annotated_callable_with_strict_mode() -> None:
+    from collections.abc import Callable
+
+    class Executor:
+        def __init__(self, func: Callable[[list[Any]], dict[str, Any]] | None = None) -> None:
+            self.func = func
+
+    with pytest.raises(colt.ConfigurationError):
+        colt.build({"func": {"@type": "partially_annotated_processor"}}, Executor, strict=True)
 
 
 def test_mapping_or_typekey() -> None:
