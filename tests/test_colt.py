@@ -97,7 +97,7 @@ class Int2Str:
 
 @colt.register("partially_annotated_processor")
 class PartiallyAnnotatedProcessor:
-    def __call__(self, value, param=None) -> dict[str, Any]:
+    def __call__(self, value, param=None) -> Dict[str, Any]:
         return {str(i): str(v) for i, v in enumerate(value)}
 
 
@@ -589,7 +589,7 @@ def test_abc_callable() -> None:
 
 def test_partially_annotated_callable() -> None:
     class Executor:
-        def __init__(self, func: Callable[[list[Any]], dict[str, Any]] | None = None) -> None:
+        def __init__(self, func: Optional[Callable[[List[Any]], Dict[str, Any]]] = None) -> None:
             self.func = func
 
     executor = colt.build({"func": {"@type": "partially_annotated_processor"}}, Executor)
@@ -599,7 +599,7 @@ def test_partially_annotated_callable() -> None:
 
 def test_partially_annotated_callable_with_strict_mode() -> None:
     class Executor:
-        def __init__(self, func: Callable[[list[Any]], dict[str, Any]] | None = None) -> None:
+        def __init__(self, func: Optional[Callable[[List[Any]], Dict[str, Any]]] = None) -> None:
             self.func = func
 
     with pytest.raises(colt.ConfigurationError):
