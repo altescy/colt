@@ -588,8 +588,6 @@ def test_abc_callable() -> None:
 
 
 def test_partially_annotated_callable() -> None:
-    from collections.abc import Callable
-
     class Executor:
         def __init__(self, func: Callable[[list[Any]], dict[str, Any]] | None = None) -> None:
             self.func = func
@@ -600,8 +598,6 @@ def test_partially_annotated_callable() -> None:
 
 
 def test_partially_annotated_callable_with_strict_mode() -> None:
-    from collections.abc import Callable
-
     class Executor:
         def __init__(self, func: Callable[[list[Any]], dict[str, Any]] | None = None) -> None:
             self.func = func
