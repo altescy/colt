@@ -3,6 +3,7 @@ import dataclasses
 import inspect
 import string
 import typing
+from abc import ABCMeta
 from collections import abc
 from enum import Enum
 from typing import Any, Callable, Dict, Final, List, Literal, Mapping, Optional, Tuple, Union
@@ -61,6 +62,16 @@ class JsonSchemaGenerator:
             description=description,
         )
 
+    def _get_any_colt_schema(self, description: Optional[str] = None) -> Dict[str, Any]:
+        assert not self._strict
+        return {
+            "type": "object",
+            "properties": {self._typekey: {"type": "string"}},
+            "additionalProperties": True,
+            "required": [self._typekey],
+            **({"description": description} if description else {}),
+        }
+
     def _generate(
         self,
         target: Any,
@@ -83,6 +94,18 @@ class JsonSchemaGenerator:
 
         if target is Any:
             schema = {}
+        elif type(target) is ABCMeta and not (isinstance(target, type) and issubclass(target, Registrable)):
+            schema = None
+            if not self._strict:
+                schema = self._get_any_colt_schema(f"abstract base class {target.__qualname__}")
+        elif getattr(target, "_is_protocol", False):
+            if self._strict:
+                schema = {
+                    "type": "object",
+                    "description": "protocol types are not supported in strict mode",
+                }
+            else:
+                schema = self._get_any_colt_schema(f"protocol type {target.__module__}.{target.__qualname__}")
         elif isinstance(target, type):
             if isinstance(target, type) and issubclass(target, Enum):
                 schema = {"enum": [member.value for member in target]}
@@ -98,24 +121,26 @@ class JsonSchemaGenerator:
                     return {"$ref": f"#/$defs/{ref_name}"}
                 if issubclass(target, Registrable):
                     if registry := Registrable._registry[target]:
-                        schema = {
-                            "anyOf": [
+                        schema = _make_any_of(
+                            *(
                                 self._generate(
-                                    getattr(subclass, constructor_name or "__init__"),
+                                    subclass if not constructor_name else getattr(subclass, constructor_name),
                                     root=False,
-                                    definitions=definitions | {ref_name: {}},
+                                    definitions=definitions,
                                     extra_properties={self._typekey: {"const": name}},
                                     path=path,
+                                    title=subclass.__qualname__,
                                 )
                                 for name, (subclass, constructor_name) in registry.items()
-                            ]
-                        }
+                            )
+                        )
                     else:
                         schema = self._generate(
                             target.__init__,
                             root=False,
                             definitions=definitions,
                             path=path,
+                            extra_properties=extra_properties,
                         )
                 elif dataclasses.is_dataclass(target):
                     fields = [field for field in dataclasses.fields(target) if field.init]
@@ -138,6 +163,7 @@ class JsonSchemaGenerator:
                     }
                 elif is_namedtuple(target):
                     annotations = typing.get_type_hints(target)
+                    field_defaults = getattr(target, "_field_defaults", {})
                     schema = {
                         "type": "object",
                         "properties": {
@@ -149,7 +175,7 @@ class JsonSchemaGenerator:
                             )
                             for name, annotation in typing.get_type_hints(target).items()
                         },
-                        "required": [name for name in annotations.keys() if name not in target._field_defaults],
+                        "required": [name for name in annotations.keys() if name not in field_defaults],
                     }
                 elif issubclass(target, dict) and (annotations := typing.get_type_hints(target)):
                     schema = {
@@ -188,9 +214,7 @@ class JsonSchemaGenerator:
                     for t in target.__args__
                     if t is not NoneType
                 ]  # exclude None
-                schema = (
-                    {"anyOf": types} if len(types) > 1 else types[0]
-                )  # if only one type excluding None, no need to use array
+                schema = _make_any_of(*types)
             elif origin in (list, List, abc.Sequence, abc.MutableSequence):  # for List
                 schema = {"type": "array"}
                 if args:
@@ -339,20 +363,12 @@ class JsonSchemaGenerator:
             schema["description"] = description
         if extra_properties and schema.get("type") == "object":
             schema.setdefault("properties", {}).update(extra_properties)
-            schema.setdefault("required", []).extend(extra_properties.keys())
+            schema["required"] = sorted(set(schema.get("required", [])) | set(extra_properties.keys()))
         if not self._strict:
-            schema = {
-                "anyOf": [
-                    schema,
-                    {
-                        "type": "object",
-                        "properties": {self._typekey: {"type": "string"}},
-                        "additionalProperties": True,
-                    },
-                ]
-            }
+            schema = _make_any_of(schema, self._get_any_colt_schema())
         if self._callback:
             schema = self._callback(path, schema)
+            schema = _normalize_schema(schema)
 
         # Register class schema as reference
         if not root and schema is not None and ref_name is not None:
@@ -363,7 +379,7 @@ class JsonSchemaGenerator:
             schema = {
                 "$schema": _JSON_SCHEMA,
                 "$defs": definitions,
-                **schema,
+                **_normalize_schema(schema),
             }
 
         return schema
@@ -379,6 +395,78 @@ def _safe_name(name: str) -> str:
 
 def _concat_path(path: ParamPath, segment: Union[int, str]) -> ParamPath:
     return path + (segment,)
+
+
+def _flatten_any_of(schema: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if subschemas := schema.get("anyOf"):
+        result: list[Dict[str, Any]] = []
+        for subschema in subschemas:
+            result.extend(_flatten_any_of(subschema))
+        return result
+    return [schema]
+
+
+def _make_any_of(*schemas: Dict[str, Any]) -> Dict[str, Any]:
+    if len(schemas) == 1:
+        return schemas[0]
+    flattened_schemas = []
+    for schema in schemas:
+        if not any(_is_equal_schema(schema, existing) for existing in flattened_schemas):
+            flattened_schemas.extend(_flatten_any_of(schema))
+    return {"anyOf": flattened_schemas}
+
+
+def _is_equal_schema(schema1: Dict[str, Any], schema2: Dict[str, Any]) -> bool:
+    """Check if two JSON schemas are equal, ignoring title and description.
+
+    Note: Given schemas are assumed to be normalized.
+    """
+
+    ignore_keys = {"title", "description"}
+
+    schema1_keys = set(schema1.keys()) - ignore_keys
+    schema2_keys = set(schema2.keys()) - ignore_keys
+    if schema1_keys != schema2_keys:
+        return False
+
+    for key in schema1_keys:
+        value1 = schema1[key]
+        value2 = schema2[key]
+        if key == "anyOf":
+            if len(value1) != len(value2):
+                return False
+            for subvalue1 in value1:
+                if not any(_is_equal_schema(subvalue1, subvalue2) for subvalue2 in value2):
+                    return False
+        elif isinstance(value1, dict) and isinstance(value2, dict):
+            if not _is_equal_schema(value1, value2):
+                return False
+        elif value1 != value2:
+            return False
+
+    return True
+
+
+def _normalize_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
+    def _dfs(o: Any) -> Any:
+        if isinstance(o, dict):
+            if "anyOf" in o:
+                subschemas = _flatten_any_of(o)
+                # Remove duplicate schemas
+                unique_subschemas = []
+                for subschema in subschemas:
+                    subschema = _dfs(subschema)
+                    if not any(_is_equal_schema(subschema, existing) for existing in unique_subschemas):
+                        unique_subschemas.append(subschema)
+                o = {"anyOf": unique_subschemas}
+            elif o.get("type") == "object" and "required" in o:
+                o["required"] = sorted(set(o["required"]))
+            o = {key: _dfs(value) for key, value in o.items()}
+        elif isinstance(o, list):
+            o = [_dfs(item) for item in o]
+        return o
+
+    return _dfs(schema)
 
 
 def _get_json_type(python_type: type) -> _JsonSchemaType:

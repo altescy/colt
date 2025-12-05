@@ -139,25 +139,29 @@ class TestJsonSchemaGeneratorWithRegistrable:
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "title": "TestJsonSchemaGeneratorWithRegistrable.Composer",
                     "$defs": {
+                        "test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Foo": {
+                            "type": "object",
+                            "properties": {
+                                "@type": {"const": "foo"},
+                                "name": {"type": "string"},
+                            },
+                            "required": ["@type", "name"],
+                            "title": "TestJsonSchemaGeneratorWithRegistrable.Foo",
+                        },
+                        "test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Bar": {
+                            "type": "object",
+                            "properties": {
+                                "@type": {"const": "bar"},
+                                "value": {"type": "integer"},
+                            },
+                            "required": ["@type"],
+                            "title": "TestJsonSchemaGeneratorWithRegistrable.Bar",
+                        },
                         "test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__BaseModel": {
                             "title": "TestJsonSchemaGeneratorWithRegistrable.BaseModel",
                             "anyOf": [
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "@type": {"const": "foo"},
-                                        "name": {"type": "string"},
-                                    },
-                                    "required": ["name", "@type"],
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "@type": {"const": "bar"},
-                                        "value": {"type": "integer"},
-                                    },
-                                    "required": ["@type"],
-                                },
+                                {"$ref": "#/$defs/test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Foo"},
+                                {"$ref": "#/$defs/test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Bar"},
                             ],
                         },
                     },
