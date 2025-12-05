@@ -339,6 +339,7 @@ class JsonSchemaGenerator:
             schema = {
                 "type": "object",
                 "properties": properties,
+                "additionalProperties": False,
                 "required": [name for name, param in keyword_params if param.default is inspect.Parameter.empty],
             }
             if var_keyword_param:
