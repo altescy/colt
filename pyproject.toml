@@ -43,6 +43,7 @@ exclude = [
 ]
 
 [tool.pyright]
+pythonVersion = "3.8"
 exclude = [
     '.venv',
     'examples',

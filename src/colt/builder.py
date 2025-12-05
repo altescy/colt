@@ -558,7 +558,7 @@ class ColtBuilder:
             constructor = get_new_type_constructor(constructor)  # type: ignore
 
         if origin == abc.Callable:
-            if not issubtype(constructor, annotation):
+            if not issubtype(constructor, annotation, strict=self._strict):
                 raise ConfigurationError(
                     f"[{get_path_name(path)}] Type mismatch, expected type is {type}, but actual type is {constructor}."
                 )

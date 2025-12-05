@@ -135,6 +135,7 @@ def issubtype(
     b: Any,
     globalns: Optional[Dict[str, Any]] = None,
     localns: Optional[Dict[str, Any]] = None,
+    strict: bool = False,
 ) -> bool:
     if isinstance(a, ForwardRef):
         if isinstance(b, type):
@@ -151,13 +152,15 @@ def issubtype(
         return True
     if b == Any:
         return True
+    if not strict and a == Any:
+        return True
 
     if isinstance(a, type) and isinstance(b, type):
         with suppress(TypeError):
             return issubclass(a, b)
 
     def _issubtype(a: Any, b: Any) -> bool:
-        return issubtype(a, b, globalns=globalns, localns=localns)
+        return issubtype(a, b, globalns=globalns, localns=localns, strict=strict)
 
     if isinstance(a, TypeVar):
         if a is b:
@@ -213,7 +216,7 @@ def issubtype(
                 return False
             a_call_signature = inspect.signature(call_method)
             a_call_args = tuple(
-                param.annotation
+                param.annotation if param.annotation != inspect._empty else Any
                 for i, param in enumerate(a_call_signature.parameters.values())
                 if not (i == 0 and param.name == "self")
             )
@@ -221,7 +224,7 @@ def issubtype(
                 a_call_signature.return_annotation if a_call_signature.return_annotation != inspect._empty else Any
             )
             a_call_required_args = tuple(
-                param.annotation
+                param.annotation if param.annotation != inspect._empty else Any
                 for i, param in enumerate(a_call_signature.parameters.values())
                 if not (i == 0 and param.name == "self") and param.default == inspect._empty
             )
