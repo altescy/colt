@@ -166,8 +166,8 @@ class TestJsonSchemaGeneratorWithRegistrable:
                         "test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__BaseModel": {
                             "title": "TestJsonSchemaGeneratorWithRegistrable.BaseModel",
                             "anyOf": [
-                                {"$ref": "#/$defs/test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Foo"},
                                 {"$ref": "#/$defs/test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Bar"},
+                                {"$ref": "#/$defs/test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Foo"},
                             ],
                         },
                     },

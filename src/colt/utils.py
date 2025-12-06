@@ -433,3 +433,17 @@ def get_new_type_constructor(type_: _NewTypeT) -> Callable[..., _NewTypeT]:
     _constructor.__annotations__ = annotations
 
     return _constructor
+
+
+def safe_get_type_hints(obj: Any) -> Dict[str, Any]:
+    try:
+        return typing.get_type_hints(obj)
+    except Exception:
+        return {}
+
+
+def safe_get_subclasses(cls: type) -> List[type]:
+    try:
+        return cls.__subclasses__()
+    except Exception:
+        return []
