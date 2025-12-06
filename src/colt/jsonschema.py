@@ -220,7 +220,7 @@ class JsonSchemaGenerator:
                         path=path,
                     )
 
-                if not self._strict and (subclasses := target.__subclasses__()):
+                if not self._strict and target is not type and (subclasses := target.__subclasses__()):
                     schema = _make_any_of(
                         *((schema,) if schema is not None else ()),
                         *(
