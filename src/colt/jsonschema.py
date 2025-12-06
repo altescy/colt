@@ -14,11 +14,33 @@ from colt._compat import NoneType, UnionType
 from colt.lazy import Lazy
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import is_namedtuple
+from colt.utils import is_namedtuple, safe_get_subclasses, safe_get_type_hints
 
 _JSON_SCHEMA: Final = "https://json-schema.org/draft/2020-12/schema"
 _SAFE_CHARS: Final = frozenset(string.ascii_letters + string.digits + "_")
 _JsonSchemaType = Literal["string", "number", "integer", "boolean", "object", "array", "null"]
+_METADATA_FIELDS: Final = frozenset(
+    {
+        "title",
+        "description",
+        "default",
+        "examples",
+        "deprecated",
+        "readOnly",
+        "writeOnly",
+        "format",
+        "pattern",
+        "minimum",
+        "maximum",
+        "minLength",
+        "maxLength",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "minProperties",
+        "maxProperties",
+    }
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -123,14 +145,17 @@ class JsonSchemaGenerator:
                 ref_name = _get_ref_name(target)
                 if not root and ref_name in definitions:
                     return {"$ref": f"#/$defs/{ref_name}"}
+                if not root:
+                    definitions.update({ref_name: {}})  # prevent recursion
                 if issubclass(target, Registrable):
                     if registry := Registrable._registry[target]:
-                        definitions.update({ref_name: {}})  # prevent recursion
                         subclasses = defaultdict(list)
                         for name, (subclass, constructor_name) in registry.items():
                             subclasses[(subclass, constructor_name)].append(name)
-                        subschemas = {
-                            _get_ref_name(subclass): self._generate(
+                        subschema_names = set()
+                        for (subclass, constructor_name), names in subclasses.items():
+                            sub_ref_name = _get_ref_name(subclass, definitions)
+                            definitions[sub_ref_name] = self._generate(
                                 getattr(subclass, constructor_name or "__init__"),
                                 root=False,
                                 definitions=definitions,
@@ -138,10 +163,8 @@ class JsonSchemaGenerator:
                                 path=path,
                                 title=subclass.__qualname__,
                             )
-                            for (subclass, constructor_name), names in subclasses.items()
-                        }
-                        schema = _make_any_of(*({"$ref": f"#/$defs/{ref_name}"} for ref_name in subschemas.keys()))
-                        definitions.update(subschemas)
+                            subschema_names.add(sub_ref_name)
+                        schema = _make_any_of(*({"$ref": f"#/$defs/{ref_name}"} for ref_name in subschema_names))
                     else:
                         schema = self._generate(
                             target.__init__,
@@ -170,7 +193,7 @@ class JsonSchemaGenerator:
                         ],
                     }
                 elif is_namedtuple(target):
-                    annotations = typing.get_type_hints(target)
+                    annotations = safe_get_type_hints(target)
                     schema = {
                         "type": "object",
                         "properties": {
@@ -180,11 +203,11 @@ class JsonSchemaGenerator:
                                 definitions=definitions,
                                 path=_concat_path(path, name),
                             )
-                            for name, annotation in typing.get_type_hints(target).items()
+                            for name, annotation in safe_get_type_hints(target).items()
                         },
                         "required": [name for name in annotations.keys() if name not in target._field_defaults],
                     }
-                elif issubclass(target, dict) and (annotations := typing.get_type_hints(target)):
+                elif issubclass(target, dict) and (annotations := safe_get_type_hints(target)):
                     schema = {
                         "type": "object",
                         "properties": {
@@ -220,7 +243,7 @@ class JsonSchemaGenerator:
                         path=path,
                     )
 
-                if not self._strict and target is not type and (subclasses := target.__subclasses__()):
+                if not self._strict and (subclasses := safe_get_subclasses(target)):
                     schema = _make_any_of(
                         *((schema,) if schema is not None else ()),
                         *(
@@ -250,8 +273,7 @@ class JsonSchemaGenerator:
                         path=path,
                     )
                     for t in target.__args__
-                    if t is not NoneType
-                ]  # exclude None
+                ]
                 schema = _make_any_of(*types)
             elif origin in (list, List, abc.Sequence, abc.MutableSequence):  # for List
                 schema = {"type": "array"}
@@ -321,8 +343,17 @@ class JsonSchemaGenerator:
             except ValueError:
                 pass
 
+            annotations: Dict[str, Any] = {}
+            try:
+                annotations = safe_get_type_hints(target)
+            except TypeError:
+                pass
+
             if sig is not None:
-                annotations = typing.get_type_hints(target)
+                try:
+                    annotations = safe_get_type_hints(target)
+                except Exception:
+                    raise ValueError(f"failed to get type hints for {target}") from None
                 positional_params = [
                     (name, param)
                     for pos, (name, param) in enumerate(sig.parameters.items())
@@ -446,8 +477,14 @@ class JsonSchemaGenerator:
         return schema
 
 
-def _get_ref_name(python_type: type) -> str:
-    return f"{_safe_name(python_type.__module__)}__{_safe_name(python_type.__qualname__)}"
+def _get_ref_name(python_type: type, definitions: Optional[Dict[str, Any]] = None) -> str:
+    ref_name = f"{_safe_name(python_type.__module__)}__{_safe_name(python_type.__qualname__)}"
+    if definitions is None or ref_name not in definitions:
+        return ref_name
+    counter = 1
+    while f"{ref_name}__{counter}" in definitions:
+        counter += 1
+    return f"{ref_name}__{counter}"
 
 
 def _safe_name(name: str) -> str:
@@ -483,10 +520,8 @@ def _is_equal_schema(schema1: Dict[str, Any], schema2: Dict[str, Any]) -> bool:
     Note: Given schemas are assumed to be normalized.
     """
 
-    ignore_keys = {"title", "description"}
-
-    schema1_keys = set(schema1.keys()) - ignore_keys
-    schema2_keys = set(schema2.keys()) - ignore_keys
+    schema1_keys = set(schema1.keys()) - _METADATA_FIELDS
+    schema2_keys = set(schema2.keys()) - _METADATA_FIELDS
     if schema1_keys != schema2_keys:
         return False
 
@@ -511,7 +546,8 @@ def _is_equal_schema(schema1: Dict[str, Any], schema2: Dict[str, Any]) -> bool:
 def _normalize_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
     def _dfs(o: Any) -> Any:
         if isinstance(o, dict):
-            if set(o.keys()) == {"anyOf"}:
+            keys = set(o.keys()) - _METADATA_FIELDS
+            if keys == {"anyOf"}:
                 subschemas = _flatten_any_of(o)
                 # Remove duplicate schemas
                 unique_subschemas = []
@@ -521,7 +557,13 @@ def _normalize_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
                         unique_subschemas.append(subschema)
                 # Sort schemas to ensure consistent order
                 unique_subschemas.sort(key=lambda s: json.dumps(s, sort_keys=True))
-                o = {"anyOf": unique_subschemas}
+                o["anyOf"] = unique_subschemas
+            if keys == {"enum"} and isinstance(o["enum"], list):
+                # Remove duplicated/non-jsonserializable enum values
+                enum_values = o["enum"]
+                enum_values = [v for v in enum_values if isinstance(v, (str, int, float, bool, type(None)))]
+                enum_value = list(sorted(set(enum_values), key=lambda v: json.dumps(v)))
+                o["enum"] = enum_value
             elif o.get("type") == "object":
                 if isinstance(o.get("properties"), dict):
                     o["properties"] = {key: _dfs(value) for key, value in o["properties"].items()}
