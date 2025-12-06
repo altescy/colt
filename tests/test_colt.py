@@ -640,3 +640,19 @@ def test_newtype() -> None:
     assert user.user_id == 123
     assert isinstance(user.geo_info.location, Vector2D)
     assert user.geo_info.location == (1.0, 2.0)
+
+
+def test_config_with_schema_key() -> None:
+    class Foo:
+        def __init__(self, x: str) -> None:
+            self.x = x
+
+    config = {
+        "$schema": "http://example.com/schema",
+        "x": "hello",
+    }
+
+    obj = colt.build(config, Foo)
+
+    assert isinstance(obj, Foo)
+    assert obj.x == "hello"

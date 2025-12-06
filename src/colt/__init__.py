@@ -6,6 +6,7 @@ from colt.callback import ColtCallback, SkipCallback
 from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
+from colt.jsonschema import JsonSchemaGenerator
 from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
@@ -18,6 +19,7 @@ __all__ = [
     "ColtContext",
     "ConfigurationError",
     "DefaultRegistry",
+    "JsonSchemaGenerator",
     "Placeholder",
     "SkipCallback",
     "import_modules",
@@ -83,10 +85,17 @@ def build(
     *,
     typekey: Optional[str] = None,
     argskey: Optional[str] = None,
+    schemakey: Optional[str] = None,
     strict: bool = False,
     callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = None,
 ) -> Union[T, Any]:
-    builder = ColtBuilder(typekey, argskey, strict, callback)
+    builder = ColtBuilder(
+        typekey=typekey,
+        argskey=argskey,
+        schemakey=schemakey,
+        strict=strict,
+        callback=callback,
+    )
     return builder(config, cls)
 
 
@@ -96,8 +105,15 @@ def dry_run(
     *,
     typekey: Optional[str] = None,
     argskey: Optional[str] = None,
+    schemakey: Optional[str] = None,
     strict: bool = False,
     callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = None,
 ) -> None:
-    builder = ColtBuilder(typekey, argskey, strict, callback)
+    builder = ColtBuilder(
+        typekey=typekey,
+        argskey=argskey,
+        schemakey=schemakey,
+        strict=strict,
+        callback=callback,
+    )
     builder.dry_run(config, cls)

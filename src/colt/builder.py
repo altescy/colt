@@ -1,5 +1,4 @@
 import io
-import sys
 import textwrap
 import traceback
 import typing
@@ -10,7 +9,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Final,
     ForwardRef,
     List,
     Literal,
@@ -27,25 +25,8 @@ from typing import (
     overload,
 )
 
-if sys.version_info >= (3, 9):
-    from types import GenericAlias
-else:
-
-    class GenericAlias: ...
-
-
-if sys.version_info >= (3, 10):
-    from types import UnionType
-else:
-
-    class UnionType: ...
-
-
-if sys.version_info >= (3, 11):
-    from enum import EnumType
-else:
-    from enum import EnumMeta as EnumType
-
+from colt import _constants
+from colt._compat import EnumType, GenericAlias, UnionType
 from colt.callback import ColtCallback, MultiCallback, SkipCallback
 from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
@@ -74,21 +55,20 @@ T = TypeVar("T")
 
 
 class ColtBuilder:
-    _DEFAULT_TYPEKEY: Final = "@type"
-    _DEFAULT_ARGSKEY: Final = "*"
-
     def __init__(
         self,
         typekey: Optional[str] = None,
         argskey: Optional[str] = None,
+        schemakey: Optional[str] = None,
         strict: bool = False,
         callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = None,
     ) -> None:
         if isinstance(callback, abc.Sequence):
             callback = MultiCallback(*callback)
 
-        self._typekey = typekey or ColtBuilder._DEFAULT_TYPEKEY
-        self._argskey = argskey or ColtBuilder._DEFAULT_ARGSKEY
+        self._typekey = typekey or _constants.DEFAULT_TYPEKEY
+        self._argskey = argskey or _constants.DEFAULT_ARGSKEY
+        self._schemakey = schemakey or _constants.DEFAULT_SCHEMAKEY
         self._strict = strict
         self._callback = callback
 
@@ -125,6 +105,8 @@ class ColtBuilder:
         config: Any,
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
     ) -> Union[T, Any]:
+        if isinstance(config, abc.Mapping) and self._schemakey in config:
+            config = {k: v for k, v in config.items() if k != self._schemakey}
         context = ColtContext(config=config)
         if self._callback is not None:
             with suppress(SkipCallback):
