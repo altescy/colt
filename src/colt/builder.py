@@ -59,6 +59,7 @@ class ColtBuilder:
         self,
         typekey: Optional[str] = None,
         argskey: Optional[str] = None,
+        schemakey: Optional[str] = None,
         strict: bool = False,
         callback: Optional[Union[ColtCallback, Sequence[ColtCallback]]] = None,
     ) -> None:
@@ -67,6 +68,7 @@ class ColtBuilder:
 
         self._typekey = typekey or _constants.DEFAULT_TYPEKEY
         self._argskey = argskey or _constants.DEFAULT_ARGSKEY
+        self._schemakey = schemakey or _constants.DEFAULT_SCHEMAKEY
         self._strict = strict
         self._callback = callback
 
@@ -103,6 +105,8 @@ class ColtBuilder:
         config: Any,
         cls: Optional[Union[Type[T], Callable[..., T]]] = None,
     ) -> Union[T, Any]:
+        if isinstance(config, abc.Mapping) and self._schemakey in config:
+            config = {k: v for k, v in config.items() if k != self._schemakey}
         context = ColtContext(config=config)
         if self._callback is not None:
             with suppress(SkipCallback):
