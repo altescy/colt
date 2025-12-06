@@ -115,6 +115,7 @@ class TestJsonSchemaGeneratorWithRegistrable:
         pass
 
     @BaseModel.register("foo")
+    @BaseModel.register("foo_alias")
     class Foo(BaseModel):
         def __init__(self, name: str) -> None:
             self.name = name
@@ -145,7 +146,7 @@ class TestJsonSchemaGeneratorWithRegistrable:
                         "test_jsonschema__TestJsonSchemaGeneratorWithRegistrable__Foo": {
                             "type": "object",
                             "properties": {
-                                "@type": {"const": "foo"},
+                                "@type": {"anyOf": [{"const": "foo"}, {"const": "foo_alias"}]},
                                 "name": {"type": "string"},
                             },
                             "additionalProperties": False,
