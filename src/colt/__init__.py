@@ -6,6 +6,7 @@ from colt.callback import ColtCallback, SkipCallback
 from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
+from colt.jsonschema import JsonSchemaGenerator
 from colt.lazy import Lazy
 from colt.placeholder import Placeholder
 from colt.registrable import Registrable
@@ -18,6 +19,7 @@ __all__ = [
     "ColtContext",
     "ConfigurationError",
     "DefaultRegistry",
+    "JsonSchemaGenerator",
     "Placeholder",
     "SkipCallback",
     "import_modules",
