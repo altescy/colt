@@ -6,7 +6,7 @@ on:
       - master
   pull_request:
     branches:
-      - '*'
+      - "*"
 
 jobs:
   tests:
@@ -15,28 +15,27 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
-          - '3.12'
-          - '3.13'
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        enable-cache: true
-        python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --all-extras
 
-    - name: Install dependencies
-      run: uv sync --all-extras
+      - name: Lint with pysen
+        run: make lint
 
-    - name: Lint with pysen
-      run: make lint
-
-    - name: Test with pytest
-      run:  make test
+      - name: Test with pytest
+        run: make test

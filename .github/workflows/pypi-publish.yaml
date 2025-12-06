@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-    - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@v5
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v7
 
-    - name: Build and publish to pypi
-      run: uv build && uv publish --token ${{ secrets.PYPI_TOKEN }}
+      - name: Build and publish to pypi
+        run: uv build && uv publish --token ${{ secrets.PYPI_TOKEN }}
