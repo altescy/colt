@@ -1,7 +1,13 @@
+import sys
+from typing import TypedDict
+
 import pytest
 
 from colt.jsonschema import JsonSchemaGenerator
 from colt.registrable import Registrable
+
+if sys.version_info >= (3, 13):
+    from typing import NotRequired, Required
 
 
 class TestJsonSchemaGeneratorWithClass:
@@ -187,3 +193,107 @@ class TestJsonSchemaGeneratorWithRegistrable:
         generator = JsonSchemaGenerator(strict=True)
         schema = generator(target)
         assert schema == expected_schema
+
+
+class TestJsonSchemaGeneratorWithNamedTuple:
+    from typing import NamedTuple
+
+    class Point(NamedTuple):
+        x: int
+        y: int
+
+    @pytest.mark.parametrize(
+        "target, expected_schema",
+        [
+            (
+                Point,
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "TestJsonSchemaGeneratorWithNamedTuple.Point",
+                    "type": "object",
+                    "$defs": {},
+                    "properties": {
+                        "x": {"type": "integer"},
+                        "y": {"type": "integer"},
+                    },
+                    "additionalProperties": False,
+                    "required": ["x", "y"],
+                },
+            ),
+        ],
+    )
+    @staticmethod
+    def test_generate_schema_with_named_tuple(target, expected_schema):
+        generator = JsonSchemaGenerator(strict=True)
+        schema = generator(target)
+        assert schema == expected_schema
+
+
+class TestJsonSchemaGeneratorWithTypedDict:
+    class User(TypedDict):
+        id: int
+        name: str
+        email: str
+
+    @pytest.mark.parametrize(
+        "target, expected_schema",
+        [
+            (
+                User,
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "title": "TestJsonSchemaGeneratorWithTypedDict.User",
+                    "type": "object",
+                    "$defs": {},
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "email": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                    "required": ["email", "id", "name"],
+                },
+            ),
+        ],
+    )
+    @staticmethod
+    def test_generate_schema_with_typed_dict(target, expected_schema):
+        generator = JsonSchemaGenerator(strict=True)
+        schema = generator(target)
+        assert schema == expected_schema
+
+    if sys.version_info >= (3, 13):
+
+        class UserWithOptional(TypedDict):
+            id: int
+            name: str
+            email: NotRequired[str]
+            age: Required[int]
+
+        @pytest.mark.parametrize(
+            "target, expected_schema",
+            [
+                (
+                    UserWithOptional,
+                    {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "title": "TestJsonSchemaGeneratorWithTypedDict.UserWithOptional",
+                        "type": "object",
+                        "$defs": {},
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "name": {"type": "string"},
+                            "email": {"type": "string"},
+                            "age": {"type": "integer"},
+                        },
+                        "additionalProperties": False,
+                        "required": ["age", "id", "name"],
+                    },
+                ),
+            ],
+        )
+        @staticmethod
+        def test_generate_schema_with_typed_dict_with_optional(target, expected_schema):
+            generator = JsonSchemaGenerator(strict=True)
+            schema = generator(target)
+            assert schema == expected_schema

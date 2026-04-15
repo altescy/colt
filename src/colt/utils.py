@@ -25,23 +25,8 @@ from typing import (
     cast,
 )
 
+from colt._compat import GenericAlias, NoneType, UnionType
 from colt.types import ParamPath
-
-if sys.version_info >= (3, 9):
-    from types import GenericAlias
-else:
-
-    class GenericAlias:
-        __origin__: Any
-
-
-if sys.version_info >= (3, 10):
-    from types import NoneType, UnionType
-else:
-    NoneType = type(None)
-
-    class UnionType: ...
-
 
 _NewTypeT = TypeVar("_NewTypeT", bound=NewType)  # pyright: ignore[reportGeneralTypeIssues]
 
@@ -329,7 +314,10 @@ def is_typeddict(cls: Any) -> bool:
         return False
     if not issubclass(cls, dict):
         return False
-    return typing.get_type_hints(cls) is not None
+    annotations = typing.get_type_hints(cls)
+    if annotations is None:
+        return False
+    return all(hasattr(cls, field) for field in ("__required_keys__", "__optional_keys__"))
 
 
 def find_typevars(annotation: Any) -> List[TypeVar]:

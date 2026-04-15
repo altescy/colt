@@ -14,7 +14,7 @@ from colt._compat import NoneType, UnionType
 from colt.lazy import Lazy
 from colt.registrable import Registrable
 from colt.types import ParamPath
-from colt.utils import is_namedtuple, safe_get_subclasses, safe_get_type_hints
+from colt.utils import is_namedtuple, is_typeddict, safe_get_subclasses, safe_get_type_hints
 
 _JSON_SCHEMA: Final = "https://json-schema.org/draft/2020-12/schema"
 _SAFE_CHARS: Final = frozenset(string.ascii_letters + string.digits + "_")
@@ -137,10 +137,6 @@ class JsonSchemaGenerator:
                 schema = {"enum": [member.value for member in target]}
             elif target in (int, float, str, bool, NoneType):
                 schema = {"type": _get_json_type(target)}
-            elif target in (list, tuple, set, List, abc.Sequence, abc.MutableSequence, abc.Set):
-                schema = {"type": "array"}
-            elif target in (dict, Dict, abc.Mapping, abc.MutableMapping):
-                schema = {"type": "object"}
             else:
                 ref_name = _get_ref_name(target)
                 if not root and ref_name in definitions:
@@ -205,9 +201,12 @@ class JsonSchemaGenerator:
                             )
                             for name, annotation in safe_get_type_hints(target).items()
                         },
+                        "additionalProperties": False,
                         "required": [name for name in annotations.keys() if name not in target._field_defaults],
                     }
-                elif issubclass(target, dict) and (annotations := safe_get_type_hints(target)):
+                elif is_typeddict(target):
+                    annotations = safe_get_type_hints(target)
+                    required_keys = getattr(target, "__required_keys__", set())
                     schema = {
                         "type": "object",
                         "properties": {
@@ -219,7 +218,10 @@ class JsonSchemaGenerator:
                             )
                             for name, annotation in annotations.items()
                         },
-                        "required": [name for name in annotations.keys() if not hasattr(target, name)],
+                        "required": [
+                            name for name in annotations.keys() if not hasattr(target, name) and name in required_keys
+                        ],
+                        "additionalProperties": False,
                     }
                 elif isinstance(target, ABCMeta):
                     if self._strict:
@@ -235,6 +237,10 @@ class JsonSchemaGenerator:
                         schema = self._generate(
                             description or f"protocol type {target.__module__}.{target.__qualname__}"
                         )
+                elif target in (list, tuple, set, List, abc.Sequence, abc.MutableSequence, abc.Set):
+                    schema = {"type": "array"}
+                elif target in (dict, Dict, abc.Mapping, abc.MutableMapping):
+                    schema = {"type": "object"}
                 elif hasattr(target, "__init__"):
                     schema = self._generate(
                         target.__init__,
@@ -275,6 +281,22 @@ class JsonSchemaGenerator:
                     for t in target.__args__
                 ]
                 schema = _make_any_of(*types)
+            elif is_namedtuple(origin):
+                annotations = safe_get_type_hints(origin)
+                schema = {
+                    "type": "object",
+                    "properties": {
+                        name: self._generate(
+                            annotation,
+                            root=False,
+                            definitions=definitions,
+                            path=_concat_path(path, name),
+                        )
+                        for name, annotation in annotations.items()
+                    },
+                    "required": [name for name in annotations.keys() if name not in origin._field_defaults],
+                    "additionalProperties": False,
+                }
             elif origin in (list, List, abc.Sequence, abc.MutableSequence):  # for List
                 schema = {"type": "array"}
                 if args:

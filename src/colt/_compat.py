@@ -28,4 +28,24 @@ else:
     class NoneType: ...
 
 
+# Required
+if sys.version_info >= (3, 13):
+    from typing import Required
+else:
+
+    class Required:
+        def __class_getitem__(cls, item):
+            return cls
+
+
+# NotRequired
+if sys.version_info >= (3, 13):
+    from typing import NotRequired
+else:
+
+    class NotRequired:
+        def __class_getitem__(cls, item):
+            return cls
+
+
 __all__ = ["GenericAlias", "UnionType", "EnumType", "NoneType"]
