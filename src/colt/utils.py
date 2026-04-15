@@ -25,23 +25,8 @@ from typing import (
     cast,
 )
 
+from colt._compat import GenericAlias, NoneType, UnionType
 from colt.types import ParamPath
-
-if sys.version_info >= (3, 9):
-    from types import GenericAlias
-else:
-
-    class GenericAlias:
-        __origin__: Any
-
-
-if sys.version_info >= (3, 10):
-    from types import NoneType, UnionType
-else:
-    NoneType = type(None)
-
-    class UnionType: ...
-
 
 _NewTypeT = TypeVar("_NewTypeT", bound=NewType)  # pyright: ignore[reportGeneralTypeIssues]
 
