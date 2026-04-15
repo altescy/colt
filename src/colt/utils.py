@@ -18,6 +18,7 @@ from typing import (
     NewType,
     Optional,
     Sequence,
+    Tuple,
     Type,
     TypeVar,
     Union,
@@ -204,7 +205,11 @@ def issubtype(
     if b_origin is collections.abc.Callable:
         if b_args == ():
             return True
+        if len(b_args) != 2:
+            return False
         if a_origin is collections.abc.Callable:
+            if len(a_args) != 2:
+                return False
             a_call_args = a_args[0]
             a_call_ret = a_args[1]
             if a_call_args is Ellipsis:
@@ -228,8 +233,7 @@ def issubtype(
                 for i, param in enumerate(a_call_signature.parameters.values())
                 if not (i == 0 and param.name == "self") and param.default == inspect._empty
             )
-        b_call_args = b_args[0]
-        b_call_ret = b_args[1]
+        b_call_args, b_call_ret = cast(Tuple[Any, Any], b_args)
         a_call_ret = NoneType if a_call_ret is None else a_call_ret
         b_call_ret = NoneType if b_call_ret is None else b_call_ret
         if not _issubtype(a_call_ret, b_call_ret):
@@ -258,9 +262,10 @@ def issubtype(
             return len(a_args) == len(b_args) and all(_issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
         if a_origin is collections.abc.Callable:
             assert b_origin == collections.abc.Callable
-            assert len(a_args) == len(b_args) == 2
-            a_params, a_ret = a_args
-            b_params, b_ret = b_args
+            if len(a_args) != 2 or len(b_args) != 2:
+                return False
+            a_params, a_ret = cast(Tuple[Any, Any], a_args)
+            b_params, b_ret = cast(Tuple[Any, Any], b_args)
             if not _issubtype(a_ret, b_ret):
                 return False
             if a_params is Ellipsis:
@@ -282,15 +287,19 @@ def issubtype(
                 return all(_issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
             return len(a_args) == len(b_args) and all(_issubtype(a_arg, b_arg) for a_arg, b_arg in zip(a_args, b_args))
         if b_origin is collections.abc.Sequence:
-            if b_args == ():
+            if len(b_args) == 0:
                 return True
-            return all(_issubtype(a_arg, b_args[0]) for a_arg in a_args if a_arg is not Ellipsis)
+            b_arg = b_args[0]
+            return all(_issubtype(a_arg, b_arg) for a_arg in a_args if a_arg is not Ellipsis)
         return False
 
     if not hasattr(a_origin, "__parameters__") and not hasattr(b_origin, "__parameters__"):
-        if b_args == ():
+        if len(b_args) == 0:
             return True
-        return all(_issubtype(a_args[0], b_args[0]) for a_arg in a_args)
+        if len(a_args) == 0:
+            return True
+        b_arg = b_args[0]
+        return all(_issubtype(a_arg, b_arg) for a_arg in a_args)
 
     a_bases = {base for base in getattr(a_origin, "__orig_bases__", ()) if _issubtype(base, b_origin)}
     if not a_bases:
