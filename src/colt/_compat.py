@@ -24,8 +24,7 @@ else:
 if sys.version_info >= (3, 10):
     from types import NoneType
 else:
-
-    class NoneType: ...
+    NoneType = type(None)
 
 
 # Required
