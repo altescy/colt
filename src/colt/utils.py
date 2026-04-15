@@ -314,10 +314,7 @@ def is_typeddict(cls: Any) -> bool:
         return False
     if not issubclass(cls, dict):
         return False
-    annotations = typing.get_type_hints(cls)
-    if annotations is None:
-        return False
-    return all(hasattr(cls, field) for field in ("__required_keys__", "__optional_keys__"))
+    return typing.get_type_hints(cls) is not None
 
 
 def find_typevars(annotation: Any) -> List[TypeVar]:
