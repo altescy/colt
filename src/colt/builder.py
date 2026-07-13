@@ -28,6 +28,7 @@ from typing import (
 from colt import _constants
 from colt._compat import EnumType, GenericAlias, UnionType
 from colt.callback import ColtCallback, MultiCallback, SkipCallback
+from colt.constructed import Constructed
 from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
@@ -264,6 +265,9 @@ class ColtBuilder:
 
         if annotation == Any:
             annotation = None
+
+        if isinstance(config, Constructed):
+            return config.value  # already built upstream; do not touch
 
         if isinstance(config, Placeholder):
             if annotation is not None and not config.match_type_hint(annotation):

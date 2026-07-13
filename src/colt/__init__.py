@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union, over
 
 from colt.builder import ColtBuilder
 from colt.callback import ColtCallback, SkipCallback
+from colt.constructed import Constructed
 from colt.context import ColtContext
 from colt.default_registry import DefaultRegistry
 from colt.error import ConfigurationError
@@ -18,6 +19,7 @@ __all__ = [
     "Registrable",
     "ColtContext",
     "ConfigurationError",
+    "Constructed",
     "DefaultRegistry",
     "JsonSchemaGenerator",
     "Placeholder",
