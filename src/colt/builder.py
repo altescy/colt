@@ -553,7 +553,7 @@ class ColtBuilder:
                 # typekey conflicts with a constructor argument; treat it as a regular argument
                 constructor = candidate_constructor  # type: ignore[assignment]
             else:
-                class_name = config.pop(self._typekey)
+                class_name = config[self._typekey]
                 try:
                     constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
                         class_name, path, annotation, allow_to_import=not self._strict
@@ -563,7 +563,6 @@ class ColtBuilder:
                     # not a registered name, so treat the mapping as plain data rather than a
                     # type tag (e.g. list[dict[str, Any]] with {"type": "text", ...} elements).
                     if annotation is None or annotation is Any:
-                        config[self._typekey] = class_name
                         return {
                             key: self._build(
                                 val,
@@ -574,6 +573,9 @@ class ColtBuilder:
                             for key, val in config.items()
                         }
                     raise
+                # Consume the typekey only once dispatch is confirmed, so the fallback
+                # above keeps the original mapping (and key order) untouched.
+                config.pop(self._typekey)
         else:
             constructor = origin or annotation  # type: ignore
 
