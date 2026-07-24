@@ -35,3 +35,13 @@ def test_build_with_typekey_as_type_indicator() -> None:
     obj = colt.build({"type": "baz_for_typekey_test", "value": 123}, typekey="type")
     assert isinstance(obj, Baz)
     assert obj.value == 123
+
+
+def test_build_typekey_fallback_to_mapping() -> None:
+    from typing import Mapping, Union
+
+    obj = colt.build({"type": "text"}, Union[dict, Mapping], typekey="type")
+    assert obj == {"type": "text"}
+
+    obj = colt.build({"type": "text"}, dict, typekey="type")
+    assert obj == {"type": "text"}

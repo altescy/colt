@@ -381,11 +381,7 @@ class ColtBuilder:
                 for i, (value_config, value_cls) in enumerate(zip(config, args))
             )
 
-        if (
-            origin in (Dict, dict, abc.Mapping, abc.MutableMapping)
-            and isinstance(config, abc.Mapping)
-            and self._typekey not in config
-        ):
+        if origin in (Dict, dict, abc.Mapping, abc.MutableMapping) and isinstance(config, abc.Mapping):
             key_cls = args[0] if args else None
             value_cls = args[1] if args else None
             return {
@@ -552,13 +548,12 @@ class ColtBuilder:
 
         if self._typekey in config:
             config = dict(config)
-            class_name = config.pop(self._typekey)
-            candidate_constructor = origin or annotation
+            candidate_constructor = origin or annotation  # type: ignore
             if candidate_constructor is not None and self._has_argument(candidate_constructor, self._typekey):
                 # typekey conflicts with a constructor argument; treat it as a regular argument
-                config[self._typekey] = class_name
                 constructor = candidate_constructor  # type: ignore[assignment]
             else:
+                class_name = config.pop(self._typekey)
                 constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
                     class_name, path, annotation, allow_to_import=not self._strict
                 )
