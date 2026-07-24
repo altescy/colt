@@ -148,6 +148,25 @@ class ColtBuilder:
             raise ConfigurationError(f"[{get_path_name(path)}] type not found error: {name}")
         return constructor
 
+    def _has_argument(
+        self,
+        constructor: Callable[..., T],
+        key: str,
+    ) -> bool:
+        if isinstance(constructor, type):
+            try:
+                type_hints = get_type_hints(
+                    getattr(constructor, "__init__"),  # noqa: B009
+                )
+            except NameError:
+                type_hints = constructor.__init__.__annotations__  # type: ignore[misc]
+        else:
+            try:
+                type_hints = get_type_hints(constructor)
+            except NameError:
+                type_hints = constructor.__annotations__
+        return key in type_hints
+
     def _get_constructor(
         self,
         config: Any,
@@ -534,9 +553,15 @@ class ColtBuilder:
         if self._typekey in config:
             config = dict(config)
             class_name = config.pop(self._typekey)
-            constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
-                class_name, path, annotation, allow_to_import=not self._strict
-            )
+            candidate_constructor = origin or annotation
+            if candidate_constructor is not None and self._has_argument(candidate_constructor, self._typekey):
+                # typekey conflicts with a constructor argument; treat it as a regular argument
+                config[self._typekey] = class_name
+                constructor = candidate_constructor  # type: ignore[assignment]
+            else:
+                constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
+                    class_name, path, annotation, allow_to_import=not self._strict
+                )
         else:
             constructor = origin or annotation  # type: ignore
 
