@@ -45,3 +45,38 @@ def test_build_typekey_fallback_to_mapping() -> None:
 
     obj = colt.build({"type": "text"}, dict, typekey="type")
     assert obj == {"type": "text"}
+
+
+def test_build_list_of_dicts_with_typekey() -> None:
+    from typing import Any, Dict, List
+
+    value = [{"type": "text", "text": "hello"}]
+
+    obj = colt.build(value, List[Dict[str, Any]], typekey="type")
+    assert obj == [{"type": "text", "text": "hello"}]
+
+    obj = colt.build(value, list[dict[str, Any]], typekey="type")
+    assert obj == [{"type": "text", "text": "hello"}]
+
+
+def test_build_typekey_in_untyped_context_is_kept_as_data() -> None:
+    from typing import Any
+
+    import pytest
+
+    from colt.error import ConfigurationError
+
+    # Any / no annotation with an unregistered typekey value -> treat as plain data.
+    assert colt.build({"type": "text", "text": "hi"}, Any, typekey="type") == {"type": "text", "text": "hi"}
+    assert colt.build({"type": "text", "text": "hi"}, typekey="type") == {"type": "text", "text": "hi"}
+    assert colt.build({"content": [{"type": "text", "text": "hi"}]}, dict[str, Any], typekey="type") == {
+        "content": [{"type": "text", "text": "hi"}]
+    }
+
+    # A registered typekey value must still dispatch, even under Any.
+    colt.register("baz_untyped_dispatch")(Baz)
+    assert isinstance(colt.build({"type": "baz_untyped_dispatch", "value": 1}, Any, typekey="type"), Baz)
+
+    # A concrete annotation with an unregistered typekey value must still raise.
+    with pytest.raises(ConfigurationError):
+        colt.build({"type": "not_registered"}, Baz, typekey="type")

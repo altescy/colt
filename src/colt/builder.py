@@ -548,15 +548,32 @@ class ColtBuilder:
 
         if self._typekey in config:
             config = dict(config)
-            candidate_constructor = origin or annotation  # type: ignore
+            candidate_constructor = origin or annotation
             if candidate_constructor is not None and self._has_argument(candidate_constructor, self._typekey):
                 # typekey conflicts with a constructor argument; treat it as a regular argument
                 constructor = candidate_constructor  # type: ignore[assignment]
             else:
                 class_name = config.pop(self._typekey)
-                constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
-                    class_name, path, annotation, allow_to_import=not self._strict
-                )
+                try:
+                    constructor: Union[Type[T], Callable[..., T]] = self._get_constructor_by_name(
+                        class_name, path, annotation, allow_to_import=not self._strict
+                    )
+                except ConfigurationError:
+                    # In an untyped context (annotation is None or Any) the typekey value is
+                    # not a registered name, so treat the mapping as plain data rather than a
+                    # type tag (e.g. list[dict[str, Any]] with {"type": "text", ...} elements).
+                    if annotation is None or annotation is Any:
+                        config[self._typekey] = class_name
+                        return {
+                            key: self._build(
+                                val,
+                                path + (key,),
+                                context=context,
+                                skip_construction=skip_construction,
+                            )
+                            for key, val in config.items()
+                        }
+                    raise
         else:
             constructor = origin or annotation  # type: ignore
 
