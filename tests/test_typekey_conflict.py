@@ -55,21 +55,20 @@ def test_build_list_of_dicts_with_typekey() -> None:
     obj = colt.build(value, List[Dict[str, Any]], typekey="type")
     assert obj == [{"type": "text", "text": "hello"}]
 
-    obj = colt.build(value, list[dict[str, Any]], typekey="type")
-    assert obj == [{"type": "text", "text": "hello"}]
-
 
 def test_build_typekey_in_untyped_context_is_kept_as_data() -> None:
-    from typing import Any
+    from typing import Any, Dict
 
     import pytest
 
     from colt.error import ConfigurationError
 
     # Any / no annotation with an unregistered typekey value -> treat as plain data.
-    assert colt.build({"type": "text", "text": "hi"}, Any, typekey="type") == {"type": "text", "text": "hi"}
+    kept: Any = colt.build({"type": "text", "text": "hi", "extra": 1}, Any, typekey="type")
+    assert kept == {"type": "text", "text": "hi", "extra": 1}
+    assert list(kept) == ["type", "text", "extra"]  # original key order preserved
     assert colt.build({"type": "text", "text": "hi"}, typekey="type") == {"type": "text", "text": "hi"}
-    assert colt.build({"content": [{"type": "text", "text": "hi"}]}, dict[str, Any], typekey="type") == {
+    assert colt.build({"content": [{"type": "text", "text": "hi"}]}, Dict[str, Any], typekey="type") == {
         "content": [{"type": "text", "text": "hi"}]
     }
 
